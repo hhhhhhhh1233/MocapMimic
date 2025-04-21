@@ -151,7 +151,7 @@ def compareSelectedAgainstReference():
 				print(f"Selected: {selected_trajectories[i][1][j + 1]} and {selected_trajectories[i][1][j]}")
 				
 	accuracy = sumCorr / (len(reference_trajectories) * len(reference_trajectories[0][1]))
-	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100}%", "", "message")
+	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100}%", "", "info")
 	print(f"Overall accuracy: {accuracy * 100}%")
 
 # ----------------------------------------
