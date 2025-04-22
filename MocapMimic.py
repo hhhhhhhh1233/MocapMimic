@@ -51,10 +51,14 @@ def getSelectedBodyTrajectoryIds():
 	trajectory_ids = qtm.data.object.trajectory.get_trajectory_ids()
 	rigid_body_trajectory_ids = []
 	selections = qtm.gui.selection.get_selections("trajectory")
+
+	if len(selections) == 0:
+		qtm.gui.message.add_message("Mocap Mimic: No rigid bodies selected", "Must select a rigid body to deal with", "error")
+		return []
+
 	selected_rigid_body_id = qtm.data.object.trajectory.get_rigid_body_id(selections[0]["id"])
 
 	for selection in selections:
-		# print(selection["id"])
 		rigid_body_id = qtm.data.object.trajectory.get_rigid_body_id(selection["id"])
 		if rigid_body_id != selected_rigid_body_id:
 			qtm.gui.message.add_message("Mocap Mimic: Multiple rigid bodies selected", "Only one rigid body should be selected at a time", "error")
