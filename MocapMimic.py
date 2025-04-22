@@ -52,10 +52,6 @@ def getSelectedBodyTrajectoryIds():
 	rigid_body_trajectory_ids = []
 	selections = qtm.gui.selection.get_selections("trajectory")
 
-	if len(selections) == 0:
-		qtm.gui.message.add_message("Mocap Mimic: No rigid bodies selected", "Must select a rigid body to deal with", "error")
-		return []
-
 	selected_rigid_body_id = qtm.data.object.trajectory.get_rigid_body_id(selections[0]["id"])
 
 	for selection in selections:
@@ -131,6 +127,10 @@ def compareSelectedAgainstReference():
 	# print(f"Reference trajectories: {len(selected_trajectories[0][1])}")
 	# print(f"Selected trajectories: {len(selected_trajectories[0][1])}")
 
+	if len(selected_trajectories) == 0 or len(selected_trajectories) == 0:
+		qtm.gui.message.add_message("Mocap Mimic: No rigid bodies selected", "Must select a rigid body to deal with", "error")
+		return
+
 	if len(selected_trajectories) != len(reference_trajectories):
 		qtm.gui.message.add_message("Mocap Mimic: Reference capture and current capture are different sizes", "The reference capture saved to file has a different number of labels than the currently selected capture", "error")
 		return
@@ -148,9 +148,7 @@ def compareSelectedAgainstReference():
 			corr = (dotProduct(getNormalized([xDeltaRef, yDeltaRef, zDeltaRef]), getNormalized([xDeltaSel, yDeltaSel, zDeltaSel])))
 			sumCorr += max(0, corr)
 
-			if corr > 0:
-				pass
-			else:
+			if corr <= 0:
 				print(f"Reference: {reference_trajectories[i][1][j + 1]} and {reference_trajectories[i][1][j]}")
 				print(f"Selected: {selected_trajectories[i][1][j + 1]} and {selected_trajectories[i][1][j]}")
 				
