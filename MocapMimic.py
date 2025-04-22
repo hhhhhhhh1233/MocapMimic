@@ -69,13 +69,13 @@ def getSelectedBodyTrajectoryIds():
 	
 def getTrajectoriesFormatted(trajectory_ids):
 	selected_range = qtm.gui.timeline.get_selected_range()
-	label_trajectories = []
+	rigid_body_trajectories = {}
 	
 	for trajectory_id in trajectory_ids:
 		trajectory_label = qtm.data.object.trajectory.get_label(trajectory_id)
-		label_trajectories.append([trajectory_label, _3d.get_samples(trajectory_id, selected_range)])
+		rigid_body_trajectories.update({trajectory_label: [trajectory_label, _3d.get_samples(trajectory_id, selected_range)]})
 	
-	return label_trajectories
+	return rigid_body_trajectories
 
 # ----------------------------------------
 # [END] TRAJECTORIES
@@ -94,19 +94,19 @@ reference_file_name = f"{qtm.settings.directory.get_project_directory()}MocapMim
 def saveSelectedAsReference():
 	rigid_body_trajectory_ids = getSelectedBodyTrajectoryIds()
 	selected_range = qtm.gui.timeline.get_selected_range()
-	label_trajectories = []
+	rigid_body_trajectories = {}
 	
 	for trajectory_id in rigid_body_trajectory_ids:
 		trajectory_label = qtm.data.object.trajectory.get_label(trajectory_id)
-		label_trajectories.append([trajectory_label, _3d.get_samples(trajectory_id, selected_range)])
+		rigid_body_trajectories.update({trajectory_label: [trajectory_label, _3d.get_samples(trajectory_id, selected_range)]})
 	
 	with open(reference_file_name, "w") as file:
-		json.dump(label_trajectories, file)
+		json.dump(rigid_body_trajectories, file)
 		
 def getReferenceFromFile():
 	with open(reference_file_name, "r") as file:
-		label_trajectories = json.load(file)    
-		return label_trajectories
+		rigid_body_trajectories = json.load(file)    
+		return rigid_body_trajectories
 
 # ----------------------------------------
 # [END] SAVING AND LOADING
@@ -121,12 +121,6 @@ def compareSelectedAgainstReference():
 	reference_trajectories = getReferenceFromFile()
 	sumCorr = 0
 	
-	# print(f"Selected trajectories: {len(selected_trajectories)}")
-	# print(f"Reference trajectories: {len(reference_trajectories)}")
-	
-	# print(f"Reference trajectories: {len(selected_trajectories[0][1])}")
-	# print(f"Selected trajectories: {len(selected_trajectories[0][1])}")
-
 	if len(selected_trajectories) == 0 or len(selected_trajectories) == 0:
 		qtm.gui.message.add_message("Mocap Mimic: No rigid bodies selected", "Must select a rigid body to deal with", "error")
 		return
@@ -135,34 +129,33 @@ def compareSelectedAgainstReference():
 		qtm.gui.message.add_message("Mocap Mimic: Reference capture and current capture are different sizes", "The reference capture saved to file has a different number of labels than the currently selected capture", "error")
 		return
 	
-	for i in range(len(reference_trajectories)):
-		for j in range(len(reference_trajectories[i][1]) - 1):
-			# If the file saved to reference happened to be missing a point in the time series then skip over this loop
-			if reference_trajectories[i][1][j + 1] == None or reference_trajectories[i][1][j] == None:
-				continue	
-
-			# If the current selected rigid body happened to be missing a point in the time series then skip over this loop too
-			if selected_trajectories[i][1][j + 1] == None or selected_trajectories[i][1][j] == None:
+	# Iterate over all labels in the rigid body
+	for label, points in reference_trajectories.items():
+		# Iterate over each sample collected per label
+		for i in range(len(points - 1)):
+			if points[i + 1] == None or points[i] == None:
+				continue
+			if selected_trajectories[label][i + 1] == None or selected_trajectories[label][i] == None:
 				continue
 
-			xDeltaRef = reference_trajectories[i][1][j + 1]["position"][0] - reference_trajectories[i][1][j]["position"][0]
-			yDeltaRef = reference_trajectories[i][1][j + 1]["position"][1] - reference_trajectories[i][1][j]["position"][1]
-			zDeltaRef = reference_trajectories[i][1][j + 1]["position"][2] - reference_trajectories[i][1][j]["position"][2]
+			xDeltaRef = points[i + 1]["position"][0] - points[i]["position"][0]
+			yDeltaRef = points[i + 1]["position"][1] - points[i]["position"][1]
+			zDeltaRef = points[i + 1]["position"][2] - points[i]["position"][2]
 			
-			xDeltaSel = selected_trajectories[i][1][j + 1]["position"][0] - selected_trajectories[i][1][j]["position"][0]
-			yDeltaSel = selected_trajectories[i][1][j + 1]["position"][1] - selected_trajectories[i][1][j]["position"][1]
-			zDeltaSel = selected_trajectories[i][1][j + 1]["position"][2] - selected_trajectories[i][1][j]["position"][2]
-		
+			xDeltaSel = selected_trajectories[label][i + 1]["position"][0] - selected_trajectories[label][i]["position"][0]
+			yDeltaSel = selected_trajectories[label][i + 1]["position"][1] - selected_trajectories[label][i]["position"][1]
+			zDeltaSel = selected_trajectories[label][i + 1]["position"][2] - selected_trajectories[label][i]["position"][2]
+
 			corr = (dotProduct(getNormalized([xDeltaRef, yDeltaRef, zDeltaRef]), getNormalized([xDeltaSel, yDeltaSel, zDeltaSel])))
 			sumCorr += max(0, corr)
 
 			if corr <= 0:
-				print(f"Reference: {reference_trajectories[i][1][j + 1]} and {reference_trajectories[i][1][j]}")
-				print(f"Selected: {selected_trajectories[i][1][j + 1]} and {selected_trajectories[i][1][j]}")
-				
+				print(f"Reference: {reference_trajectories[i][1][i + 1]} and {reference_trajectories[i][1][i]}")
+				print(f"Selected: {selected_trajectories[i][1][i + 1]} and {selected_trajectories[i][1][i]}")
+
 	accuracy = sumCorr / (len(reference_trajectories) * len(reference_trajectories[0][1]))
-	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100}%", "", "info")
-	print(f"Overall accuracy: {accuracy * 100}%")
+	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
+	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
 # ----------------------------------------
 # [END] COMPARING TRAJECTORIES
