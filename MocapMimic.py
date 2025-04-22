@@ -137,6 +137,14 @@ def compareSelectedAgainstReference():
 	
 	for i in range(len(reference_trajectories)):
 		for j in range(len(reference_trajectories[i][1]) - 1):
+			# If the file saved to reference happened to be missing a point in the time series then skip over this loop
+			if reference_trajectories[i][1][j + 1] == None or reference_trajectories[i][1][j] == None:
+				continue	
+
+			# If the current selected rigid body happened to be missing a point in the time series then skip over this loop too
+			if selected_trajectories[i][1][j + 1] == None or selected_trajectories[i][1][j] == None:
+				continue
+
 			xDeltaRef = reference_trajectories[i][1][j + 1]["position"][0] - reference_trajectories[i][1][j]["position"][0]
 			yDeltaRef = reference_trajectories[i][1][j + 1]["position"][1] - reference_trajectories[i][1][j]["position"][1]
 			zDeltaRef = reference_trajectories[i][1][j + 1]["position"][2] - reference_trajectories[i][1][j]["position"][2]
