@@ -39,6 +39,12 @@ def getDistance(vec1, vec2):
 		diffVec[i] -= vec1[i]
 	return getLength(diffVec)
 
+def getDifference(lvec, rvec):
+	resultVec = lvec[:]
+	for i in range(len(lvec)):
+		resultVec[i] -= rvec[i]
+	return resultVec
+
 # ----------------------------------------
 # [END] VECTORS
 # ----------------------------------------
@@ -74,7 +80,8 @@ def getTrajectoriesFormatted(trajectory_ids):
 	
 	for trajectory_id in trajectory_ids:
 		trajectory_label = qtm.data.object.trajectory.get_label(trajectory_id)
-		rigid_body_trajectories.update({trajectory_label: _3d.get_samples(trajectory_id, selected_range)})
+		trajectory_points = _3d.get_samples(trajectory_id, selected_range)
+		rigid_body_trajectories.update({trajectory_label: trajectory_points})
 	
 	return rigid_body_trajectories
 
@@ -99,7 +106,8 @@ def saveSelectedAsReference():
 	
 	for trajectory_id in rigid_body_trajectory_ids:
 		trajectory_label = qtm.data.object.trajectory.get_label(trajectory_id)
-		rigid_body_trajectories.update({trajectory_label: _3d.get_samples(trajectory_id, selected_range)})
+		trajectory_points = _3d.get_samples(trajectory_id, selected_range)
+		rigid_body_trajectories.update({trajectory_label: trajectory_points})
 	
 	with open(reference_file_name, "w") as file:
 		json.dump(rigid_body_trajectories, file)
@@ -139,15 +147,10 @@ def compareSelectedAgainstReference():
 			if selected_trajectories[label][i + 1] == None or selected_trajectories[label][i] == None:
 				continue
 
-			xDeltaRef = points[i + 1]["position"][0] - points[i]["position"][0]
-			yDeltaRef = points[i + 1]["position"][1] - points[i]["position"][1]
-			zDeltaRef = points[i + 1]["position"][2] - points[i]["position"][2]
-			
-			xDeltaSel = selected_trajectories[label][i + 1]["position"][0] - selected_trajectories[label][i]["position"][0]
-			yDeltaSel = selected_trajectories[label][i + 1]["position"][1] - selected_trajectories[label][i]["position"][1]
-			zDeltaSel = selected_trajectories[label][i + 1]["position"][2] - selected_trajectories[label][i]["position"][2]
+			RefDelta = getDifference(points[i + 1]["position"], points[i]["position"])
+			SelDelta = getDifference(selected_trajectories[label][i + 1]["position"], selected_trajectories[label][i]["position"])
 
-			corr = (dotProduct(getNormalized([xDeltaRef, yDeltaRef, zDeltaRef]), getNormalized([xDeltaSel, yDeltaSel, zDeltaSel])))
+			corr = dotProduct(getNormalized(RefDelta), getNormalized(SelDelta))
 			sumCorr += max(0, corr)
 
 			if corr <= 0:
@@ -156,8 +159,8 @@ def compareSelectedAgainstReference():
 
 	numberOfLables = len(reference_trajectories)
 	numberOfSamples = len(reference_trajectories[list(reference_trajectories.keys())[0]])
-
 	accuracy = sumCorr / (numberOfLables * numberOfSamples)
+
 	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
@@ -181,7 +184,7 @@ qtm.gui.set_command_execute_function(save_reference_function_name, saveSelectedA
 # Adding it to the menu
 qtm.gui.insert_menu_button(my_menu_handle, "Save Reference", save_reference_function_name)
 
-# Setting up the test function
+# Setting up the compare function
 selected_to_reference_name = "mocap_mimic_compare_selected_to_reference"
 qtm.gui.add_command(selected_to_reference_name)
 qtm.gui.set_command_execute_function(selected_to_reference_name, compareSelectedAgainstReference)
