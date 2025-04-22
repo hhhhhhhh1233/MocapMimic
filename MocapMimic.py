@@ -58,6 +58,8 @@ def getSelectedBodyTrajectoryIds():
 	rigid_body_trajectory_ids = []
 	selections = qtm.gui.selection.get_selections("trajectory")
     
+	if len(selections) == 0:
+		return []
     
 	selected_rigid_body_id = qtm.data.object.trajectory.get_rigid_body_id(selections[0]["id"])
 
