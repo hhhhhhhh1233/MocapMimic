@@ -51,7 +51,8 @@ def getSelectedBodyTrajectoryIds():
 	trajectory_ids = qtm.data.object.trajectory.get_trajectory_ids()
 	rigid_body_trajectory_ids = []
 	selections = qtm.gui.selection.get_selections("trajectory")
-
+    
+    
 	selected_rigid_body_id = qtm.data.object.trajectory.get_rigid_body_id(selections[0]["id"])
 
 	for selection in selections:
@@ -73,7 +74,7 @@ def getTrajectoriesFormatted(trajectory_ids):
 	
 	for trajectory_id in trajectory_ids:
 		trajectory_label = qtm.data.object.trajectory.get_label(trajectory_id)
-		rigid_body_trajectories.update({trajectory_label: [trajectory_label, _3d.get_samples(trajectory_id, selected_range)]})
+		rigid_body_trajectories.update({trajectory_label: _3d.get_samples(trajectory_id, selected_range)})
 	
 	return rigid_body_trajectories
 
@@ -98,7 +99,7 @@ def saveSelectedAsReference():
 	
 	for trajectory_id in rigid_body_trajectory_ids:
 		trajectory_label = qtm.data.object.trajectory.get_label(trajectory_id)
-		rigid_body_trajectories.update({trajectory_label: [trajectory_label, _3d.get_samples(trajectory_id, selected_range)]})
+		rigid_body_trajectories.update({trajectory_label: _3d.get_samples(trajectory_id, selected_range)})
 	
 	with open(reference_file_name, "w") as file:
 		json.dump(rigid_body_trajectories, file)
@@ -132,7 +133,7 @@ def compareSelectedAgainstReference():
 	# Iterate over all labels in the rigid body
 	for label, points in reference_trajectories.items():
 		# Iterate over each sample collected per label
-		for i in range(len(points - 1)):
+		for i in range(len(points) - 1):
 			if points[i + 1] == None or points[i] == None:
 				continue
 			if selected_trajectories[label][i + 1] == None or selected_trajectories[label][i] == None:
@@ -153,7 +154,10 @@ def compareSelectedAgainstReference():
 				print(f"Reference: {reference_trajectories[i][1][i + 1]} and {reference_trajectories[i][1][i]}")
 				print(f"Selected: {selected_trajectories[i][1][i + 1]} and {selected_trajectories[i][1][i]}")
 
-	accuracy = sumCorr / (len(reference_trajectories) * len(reference_trajectories[0][1]))
+	numberOfLables = len(reference_trajectories)
+	numberOfSamples = len(reference_trajectories[list(reference_trajectories.keys())[0]])
+
+	accuracy = sumCorr / (numberOfLables * numberOfSamples)
 	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
