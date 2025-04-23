@@ -53,6 +53,13 @@ def getDifference(lvec, rvec):
 # [BEGIN] TRAJECTORIES
 # ----------------------------------------
 
+def printSelected():
+	trajectory_selections = qtm.gui.selection.get_selections("trajectory")
+	bone_selections = qtm.gui.selection.get_selections("bone")
+
+	print(f"Selected trajectories: {trajectory_selections}")
+	print(f"Selected bones: {bone_selections}")
+
 def getSelectedBodyTrajectoryIds():
 	trajectory_ids = qtm.data.object.trajectory.get_trajectory_ids()
 	rigid_body_trajectory_ids = []
@@ -193,6 +200,14 @@ qtm.gui.set_command_execute_function(selected_to_reference_name, compareSelected
 
 # Adding it to the menu
 qtm.gui.insert_menu_button(my_menu_handle, "Compare to Reference", selected_to_reference_name)
+
+# Setting up the compare function
+print_selected_name = "mocap_mimic_print_selected"
+qtm.gui.add_command(print_selected_name)
+qtm.gui.set_command_execute_function(print_selected_name, printSelected)
+
+# Adding it to the menu
+qtm.gui.insert_menu_button(my_menu_handle, "Print Selections", print_selected_name)
 
 # ----------------------------------------
 # [END] ADDING MENU ITEMS
