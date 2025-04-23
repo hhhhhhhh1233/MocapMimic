@@ -60,6 +60,14 @@ def printSelected():
 	print(f"Selected trajectories: {trajectory_selections}")
 	print(f"Selected bones: {bone_selections}")
 
+	skeleton_ids = qtm.data.object.skeleton.get_skeleton_ids()
+
+	print(f"skeleton_ids: {skeleton_ids}")
+
+	for trajectory in trajectory_selections:
+		skeleton_segment_id = qtm.data.object.trajectory.get_skeleton_segment_id(trajectory["id"])
+		print(f"skeleton_segment_id: {skeleton_segment_id}")
+
 def getSelectedBodyTrajectoryIds():
 	trajectory_ids = qtm.data.object.trajectory.get_trajectory_ids()
 	rigid_body_trajectory_ids = []
