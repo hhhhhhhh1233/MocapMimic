@@ -173,19 +173,17 @@ def saveSelectedRigidBodyAsReference():
 		json.dump(rigid_body_trajectories, file)
 		
 def saveSelectedSkeletonAsReference():
-	print("saveSelectedSkeletonAsReference() called")
-	return
-	rigid_body_trajectory_ids = getSelectedRigidBodyTrajectoryIDs()
+	skeleton_trajectory_ids = getSelectedSkeletonTrajectoryIDs()
 	selected_range = qtm.gui.timeline.get_selected_range()
-	rigid_body_trajectories = {}
+	skeleton_trajectories = {}
 	
-	for trajectory_id in rigid_body_trajectory_ids:
+	for trajectory_id in skeleton_trajectory_ids:
 		trajectory_label = qtm.data.object.trajectory.get_label(trajectory_id)
 		trajectory_points = _3d.get_samples(trajectory_id, selected_range)
-		rigid_body_trajectories.update({trajectory_label: trajectory_points})
+		skeleton_trajectories.update({trajectory_label: trajectory_points})
 	
-	with open(rigid_body_reference_file_name, "w") as file:
-		json.dump(rigid_body_trajectories, file)
+	with open(skeleton_reference_file_name, "w") as file:
+		json.dump(skeleton_trajectories, file)
 		
 def getRigidBodyReferenceFromFile():
 	with open(rigid_body_reference_file_name, "r") as file:
@@ -193,11 +191,9 @@ def getRigidBodyReferenceFromFile():
 		return rigid_body_trajectories
 
 def getSkeletonReferenceFromFile():
-	print("getSkeletonReferenceFromFile() called")
-	return
-	with open(rigid_body_reference_file_name, "r") as file:
-		rigid_body_trajectories = json.load(file)    
-		return rigid_body_trajectories
+	with open(skeleton_reference_file_name, "r") as file:
+		skeleton_trajectories = json.load(file)    
+		return skeleton_trajectories
 
 # ----------------------------------------
 # [END] SAVING AND LOADING
