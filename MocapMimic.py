@@ -125,10 +125,11 @@ def getSelectedSkeletonTrajectoryIDs():
 	# Filter all trajectories down to just those that are
 	# associated with the skeleton the user selected
 	for trajectory_id in trajectory_ids:
-		trajectory_id_segment_id = qtm.data.object.skeleton.get_skeleton_segment_id(trajectory_id)
-		trajectory_id_skeleton_id = qtm.data.object.skeleton.get_segment_skeleton_id(trajectory_id_segment_id)
-		if trajectory_id_skeleton_id == selected_skeleton_id:
-			skeleton_trajectory_ids.append(trajectory_id)
+		trajectory_id_segment_id = qtm.data.object.trajectory.get_skeleton_segment_id(trajectory_id)
+		if trajectory_id_segment_id != None:
+			trajectory_id_skeleton_id = qtm.data.object.skeleton.get_segment_skeleton_id(trajectory_id_segment_id)
+			if trajectory_id_skeleton_id == selected_skeleton_id:
+				skeleton_trajectory_ids.append(trajectory_id)
 
 	return skeleton_trajectory_ids
 	
