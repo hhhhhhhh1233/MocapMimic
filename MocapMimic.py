@@ -114,7 +114,8 @@ def getTrajectoriesFormatted(trajectory_ids):
 # [BEGIN] SAVING AND LOADING
 # ----------------------------------------
 	
-reference_file_name = f"{qtm.settings.directory.get_project_directory()}MocapMimicReference.json"
+rigid_body_reference_file_name = f"{qtm.settings.directory.get_project_directory()}MocapMimicRigidBodyReference.json"
+skeleton_reference_file_name = f"{qtm.settings.directory.get_project_directory()}MocapMimicSkeletonReference.json"
 
 def saveSelectedRigidBodyAsReference():
 	rigid_body_trajectory_ids = getSelectedBodyTrajectoryIds()
@@ -126,11 +127,33 @@ def saveSelectedRigidBodyAsReference():
 		trajectory_points = _3d.get_samples(trajectory_id, selected_range)
 		rigid_body_trajectories.update({trajectory_label: trajectory_points})
 	
-	with open(reference_file_name, "w") as file:
+	with open(rigid_body_reference_file_name, "w") as file:
 		json.dump(rigid_body_trajectories, file)
 		
-def getReferenceFromFile():
-	with open(reference_file_name, "r") as file:
+def saveSelectedSkeletonAsReference():
+	print("saveSelectedSkeletonAsReference() called")
+	return
+	rigid_body_trajectory_ids = getSelectedBodyTrajectoryIds()
+	selected_range = qtm.gui.timeline.get_selected_range()
+	rigid_body_trajectories = {}
+	
+	for trajectory_id in rigid_body_trajectory_ids:
+		trajectory_label = qtm.data.object.trajectory.get_label(trajectory_id)
+		trajectory_points = _3d.get_samples(trajectory_id, selected_range)
+		rigid_body_trajectories.update({trajectory_label: trajectory_points})
+	
+	with open(rigid_body_reference_file_name, "w") as file:
+		json.dump(rigid_body_trajectories, file)
+		
+def getRigidBodyReferenceFromFile():
+	with open(rigid_body_reference_file_name, "r") as file:
+		rigid_body_trajectories = json.load(file)    
+		return rigid_body_trajectories
+
+def getSkeletonReferenceFromFile():
+	print("getSkeletonReferenceFromFile() called")
+	return
+	with open(rigid_body_reference_file_name, "r") as file:
 		rigid_body_trajectories = json.load(file)    
 		return rigid_body_trajectories
 
@@ -144,7 +167,7 @@ def getReferenceFromFile():
 
 def compareSelectedRigidBodyAgainstReference():
 	selected_trajectories = getTrajectoriesFormatted(getSelectedBodyTrajectoryIds())
-	reference_trajectories = getReferenceFromFile()
+	reference_trajectories = getRigidBodyReferenceFromFile()
 	sumCorr = 0
 	
 	if len(selected_trajectories) == 0 or len(selected_trajectories) == 0:
@@ -181,6 +204,10 @@ def compareSelectedRigidBodyAgainstReference():
 	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
+def compareSelectedSkeletonAgainstReference():
+	print("compareSelectedSkeletonAgainstReference() called")
+	return
+
 # ----------------------------------------
 # [END] COMPARING TRAJECTORIES
 # ----------------------------------------
@@ -196,6 +223,9 @@ mocap_mimic_menu_handle = qtm.gui.insert_menu_submenu(None, mocap_mimic_menu_nam
 rigid_body_submenu_name = "Rigid Body"
 rigid_body_submenu_handle = qtm.gui.insert_menu_submenu(mocap_mimic_menu_handle, rigid_body_submenu_name)
 
+skeleton_submenu_name = "Skeleton"
+skeleton_submenu_handle = qtm.gui.insert_menu_submenu(mocap_mimic_menu_handle, skeleton_submenu_name)
+
 # Setting up save function
 rigid_body_save_reference_function_name = "mocap_mimic_rigid_body_save_reference"
 qtm.gui.add_command(rigid_body_save_reference_function_name)
@@ -207,6 +237,18 @@ rigid_body_compare_selected_to_reference = "mocap_mimic_rigid_body_compare_selec
 qtm.gui.add_command(rigid_body_compare_selected_to_reference)
 qtm.gui.set_command_execute_function(rigid_body_compare_selected_to_reference, compareSelectedRigidBodyAgainstReference)
 qtm.gui.insert_menu_button(rigid_body_submenu_handle, "Compare to Reference", rigid_body_compare_selected_to_reference)
+
+# Setting up save function
+skeleton_save_reference_function_name = "mocap_mimic_skeleton_save_reference"
+qtm.gui.add_command(skeleton_save_reference_function_name)
+qtm.gui.set_command_execute_function(skeleton_save_reference_function_name, saveSelectedSkeletonAsReference)
+qtm.gui.insert_menu_button(skeleton_submenu_handle, "Save Reference", skeleton_save_reference_function_name)
+
+# Setting up the compare function
+skeleton_compare_selected_to_reference = "mocap_mimic_skeleton_compare_selected_to_reference"
+qtm.gui.add_command(skeleton_compare_selected_to_reference)
+qtm.gui.set_command_execute_function(skeleton_compare_selected_to_reference, compareSelectedSkeletonAgainstReference)
+qtm.gui.insert_menu_button(skeleton_submenu_handle, "Compare to Reference", skeleton_compare_selected_to_reference)
 
 # Setting up the compare function
 print_selected_name = "mocap_mimic_print_selected"
