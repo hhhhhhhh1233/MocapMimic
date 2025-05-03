@@ -68,7 +68,7 @@ def printSelected():
 		skeleton_segment_id = qtm.data.object.trajectory.get_skeleton_segment_id(trajectory["id"])
 		print(f"skeleton_segment_id: {skeleton_segment_id}")
 
-def getSelectedBodyTrajectoryIds():
+def getSelectedRigidBodyTrajectoryIDs():
 	trajectory_ids = qtm.data.object.trajectory.get_trajectory_ids()
 	rigid_body_trajectory_ids = []
 	selections = qtm.gui.selection.get_selections("trajectory")
@@ -78,18 +78,59 @@ def getSelectedBodyTrajectoryIds():
     
 	selected_rigid_body_id = qtm.data.object.trajectory.get_rigid_body_id(selections[0]["id"])
 
+	# Make sure that the user isn't selecting multiple rigid bodies at once
 	for selection in selections:
 		rigid_body_id = qtm.data.object.trajectory.get_rigid_body_id(selection["id"])
 		if rigid_body_id != selected_rigid_body_id:
 			qtm.gui.message.add_message("Mocap Mimic: Multiple rigid bodies selected", "Only one rigid body should be selected at a time", "error")
 			return []
 	
+	# Filter all trajectories down to just those that are
+	# associated with the rigid body the user selected
 	for trajectory_id in trajectory_ids:
 		trajectory_id_rigid_body_id = qtm.data.object.trajectory.get_rigid_body_id(trajectory_id)
 		if trajectory_id_rigid_body_id == selected_rigid_body_id:
 			rigid_body_trajectory_ids.append(trajectory_id)
 			
 	return rigid_body_trajectory_ids
+
+def getSelectedSkeletonTrajectoryIDs():
+	trajectory_ids = qtm.data.object.trajectory.get_trajectory_ids()
+	skeleton_trajectory_ids = []
+	selections = qtm.gui.selection.get_selections("trajectory")
+
+	if len(selections) == 0:
+		return []
+
+	selected_segment_id = qtm.data.object.trajectory.get_skeleton_segment_id(selections[0]["id"])
+
+	if selected_segment_id == None:
+		qtm.gui.message.add_message("Mocap Mimic: Non-skeleton trajectory selected", "Not all selected trajectories are associated with a skeleton", "error")
+		return []
+
+	selected_skeleton_id = qtm.data.object.skeleton.get_segment_skeleton_id(selected_segment_id)
+
+	# NOTE Make sure that all trajectories selected are associated with the same skeleton
+	for selection in selections:
+		segment_id = qtm.data.object.trajectory.get_skeleton_segment_id(selection["id"])
+		skeleton_id = qtm.data.object.skeleton.get_segment_skeleton_id(segment_id)
+		if skeleton_id == None:
+			qtm.gui.message.add_message("Mocap Mimic: Non-skeleton trajectory selected", "Not all selected trajectories are associated with a skeleton", "error")
+			return []
+
+		if skeleton_id != selected_skeleton_id:
+			qtm.gui.message.add_message("Mocap Mimic: Multiple skeletons selected", "Only one skeleton should be selected at a time", "error")
+			return []
+
+	# Filter all trajectories down to just those that are
+	# associated with the skeleton the user selected
+	for trajectory_id in trajectory_ids:
+		trajectory_id_segment_id = qtm.data.object.skeleton.get_skeleton_segment_id(trajectory_id)
+		trajectory_id_skeleton_id = qtm.data.object.skeleton.get_segment_skeleton_id(trajectory_id_segment_id)
+		if trajectory_id_skeleton_id == selected_skeleton_id:
+			skeleton_trajectory_ids.append(trajectory_id)
+
+	return skeleton_trajectory_ids
 	
 def getTrajectoriesFormatted(trajectory_ids):
 	selected_range = qtm.gui.timeline.get_selected_range()
@@ -118,7 +159,7 @@ rigid_body_reference_file_name = f"{qtm.settings.directory.get_project_directory
 skeleton_reference_file_name = f"{qtm.settings.directory.get_project_directory()}MocapMimicSkeletonReference.json"
 
 def saveSelectedRigidBodyAsReference():
-	rigid_body_trajectory_ids = getSelectedBodyTrajectoryIds()
+	rigid_body_trajectory_ids = getSelectedRigidBodyTrajectoryIDs()
 	selected_range = qtm.gui.timeline.get_selected_range()
 	rigid_body_trajectories = {}
 	
@@ -133,7 +174,7 @@ def saveSelectedRigidBodyAsReference():
 def saveSelectedSkeletonAsReference():
 	print("saveSelectedSkeletonAsReference() called")
 	return
-	rigid_body_trajectory_ids = getSelectedBodyTrajectoryIds()
+	rigid_body_trajectory_ids = getSelectedRigidBodyTrajectoryIDs()
 	selected_range = qtm.gui.timeline.get_selected_range()
 	rigid_body_trajectories = {}
 	
@@ -166,7 +207,7 @@ def getSkeletonReferenceFromFile():
 # ----------------------------------------
 
 def compareSelectedRigidBodyAgainstReference():
-	selected_trajectories = getTrajectoriesFormatted(getSelectedBodyTrajectoryIds())
+	selected_trajectories = getTrajectoriesFormatted(getSelectedRigidBodyTrajectoryIDs())
 	reference_trajectories = getRigidBodyReferenceFromFile()
 	sumCorr = 0
 	
@@ -205,7 +246,8 @@ def compareSelectedRigidBodyAgainstReference():
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
 def compareSelectedSkeletonAgainstReference():
-	print("compareSelectedSkeletonAgainstReference() called")
+	skeleton_trajectory_ids = getSelectedSkeletonTrajectoryIDs()
+	print(f"All selected trajectories: {skeleton_trajectory_ids}")
 	return
 
 # ----------------------------------------
