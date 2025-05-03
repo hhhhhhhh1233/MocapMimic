@@ -116,7 +116,7 @@ def getTrajectoriesFormatted(trajectory_ids):
 	
 reference_file_name = f"{qtm.settings.directory.get_project_directory()}MocapMimicReference.json"
 
-def saveSelectedAsReference():
+def saveSelectedRigidBodyAsReference():
 	rigid_body_trajectory_ids = getSelectedBodyTrajectoryIds()
 	selected_range = qtm.gui.timeline.get_selected_range()
 	rigid_body_trajectories = {}
@@ -142,7 +142,7 @@ def getReferenceFromFile():
 # [BEGIN] COMPARING TRAJECTORIES
 # ----------------------------------------
 
-def compareSelectedAgainstReference():
+def compareSelectedRigidBodyAgainstReference():
 	selected_trajectories = getTrajectoriesFormatted(getSelectedBodyTrajectoryIds())
 	reference_trajectories = getReferenceFromFile()
 	sumCorr = 0
@@ -190,32 +190,29 @@ def compareSelectedAgainstReference():
 # ----------------------------------------
 
 # Root menu option
-menu_name = "Mocap Mimic"
-my_menu_handle = qtm.gui.insert_menu_submenu(None, menu_name)
+mocap_mimic_menu_name = "Mocap Mimic"
+mocap_mimic_menu_handle = qtm.gui.insert_menu_submenu(None, mocap_mimic_menu_name)
+
+rigid_body_submenu_name = "Rigid Body"
+rigid_body_submenu_handle = qtm.gui.insert_menu_submenu(mocap_mimic_menu_handle, rigid_body_submenu_name)
 
 # Setting up save function
-save_reference_function_name = "mocap_mimic_save_reference"
-qtm.gui.add_command(save_reference_function_name)
-qtm.gui.set_command_execute_function(save_reference_function_name, saveSelectedAsReference)
-
-# Adding it to the menu
-qtm.gui.insert_menu_button(my_menu_handle, "Save Reference", save_reference_function_name)
+rigid_body_save_reference_function_name = "mocap_mimic_rigid_body_save_reference"
+qtm.gui.add_command(rigid_body_save_reference_function_name)
+qtm.gui.set_command_execute_function(rigid_body_save_reference_function_name, saveSelectedRigidBodyAsReference)
+qtm.gui.insert_menu_button(rigid_body_submenu_handle, "Save Reference", rigid_body_save_reference_function_name)
 
 # Setting up the compare function
-selected_to_reference_name = "mocap_mimic_compare_selected_to_reference"
-qtm.gui.add_command(selected_to_reference_name)
-qtm.gui.set_command_execute_function(selected_to_reference_name, compareSelectedAgainstReference)
-
-# Adding it to the menu
-qtm.gui.insert_menu_button(my_menu_handle, "Compare to Reference", selected_to_reference_name)
+rigid_body_compare_selected_to_reference = "mocap_mimic_rigid_body_compare_selected_to_reference"
+qtm.gui.add_command(rigid_body_compare_selected_to_reference)
+qtm.gui.set_command_execute_function(rigid_body_compare_selected_to_reference, compareSelectedRigidBodyAgainstReference)
+qtm.gui.insert_menu_button(rigid_body_submenu_handle, "Compare to Reference", rigid_body_compare_selected_to_reference)
 
 # Setting up the compare function
 print_selected_name = "mocap_mimic_print_selected"
 qtm.gui.add_command(print_selected_name)
 qtm.gui.set_command_execute_function(print_selected_name, printSelected)
-
-# Adding it to the menu
-qtm.gui.insert_menu_button(my_menu_handle, "Print Selections", print_selected_name)
+qtm.gui.insert_menu_button(mocap_mimic_menu_handle, "Print Selections", print_selected_name)
 
 # ----------------------------------------
 # [END] ADDING MENU ITEMS
