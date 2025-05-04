@@ -203,41 +203,53 @@ def getSkeletonReferenceFromFile():
 # [BEGIN] COMPARING TRAJECTORIES
 # ----------------------------------------
 
+def compareTrajectories(base_trajectories, mimic_trajectories):
+	sumCorr = 0
+	
+	if len(base_trajectories) != len(mimic_trajectories):
+		qtm.gui.message.add_message("Mocap Mimic: Reference capture and current capture are different sizes", "The reference capture saved to file has a different number of labels than the currently selected capture, they are probably different types of objects", "error")
+		return
+	
+	# Iterate over all labels in the rigid body
+	for label, points in base_trajectories.items():
+		# Iterate over each sample collected per label
+		for i in range(len(points) - 1):
+			# Skip over this iteration if one of the data points is missing
+			# TODO This can be fixed by filling in the gaps with an average
+			if points[i + 1] == None or points[i] == None:
+				continue
+			if mimic_trajectories[label][i + 1] == None or mimic_trajectories[label][i] == None:
+				continue
+
+			RefDelta = getDifference(points[i + 1]["position"], points[i]["position"])
+			SelDelta = getDifference(mimic_trajectories[label][i + 1]["position"], mimic_trajectories[label][i]["position"])
+
+			corr = 0
+			if getLength(RefDelta) == 0 and getLength(SelDelta) == 0:
+				corr = 1
+			else:
+				corr = dotProduct(getNormalized(RefDelta), getNormalized(SelDelta))
+			sumCorr += max(0, corr)
+
+			# if corr <= 0:
+			# 	print(f"Reference: {base_trajectories[i][1][i + 1]} and {base_trajectories[i][1][i]}")
+			# 	print(f"Selected: {mimic_trajectories[i][1][i + 1]} and {mimic_trajectories[i][1][i]}")
+
+	numberOfLables = len(base_trajectories)
+	numberOfSamples = len(base_trajectories[list(base_trajectories.keys())[0]])
+	accuracy = sumCorr / (numberOfLables * numberOfSamples)
+
+	return accuracy
+
 def compareSelectedRigidBodyAgainstReference():
 	selected_trajectories = getTrajectoriesFormatted(getSelectedRigidBodyTrajectoryIDs())
 	reference_trajectories = getRigidBodyReferenceFromFile()
-	sumCorr = 0
-	
+
 	if len(selected_trajectories) == 0 or len(selected_trajectories) == 0:
 		qtm.gui.message.add_message("Mocap Mimic: No rigid bodies selected", "Must select a rigid body to deal with", "error")
 		return
 
-	if len(selected_trajectories) != len(reference_trajectories):
-		qtm.gui.message.add_message("Mocap Mimic: Reference capture and current capture are different sizes", "The reference capture saved to file has a different number of labels than the currently selected capture", "error")
-		return
-	
-	# Iterate over all labels in the rigid body
-	for label, points in reference_trajectories.items():
-		# Iterate over each sample collected per label
-		for i in range(len(points) - 1):
-			if points[i + 1] == None or points[i] == None:
-				continue
-			if selected_trajectories[label][i + 1] == None or selected_trajectories[label][i] == None:
-				continue
-
-			RefDelta = getDifference(points[i + 1]["position"], points[i]["position"])
-			SelDelta = getDifference(selected_trajectories[label][i + 1]["position"], selected_trajectories[label][i]["position"])
-
-			corr = dotProduct(getNormalized(RefDelta), getNormalized(SelDelta))
-			sumCorr += max(0, corr)
-
-			if corr <= 0:
-				print(f"Reference: {reference_trajectories[i][1][i + 1]} and {reference_trajectories[i][1][i]}")
-				print(f"Selected: {selected_trajectories[i][1][i + 1]} and {selected_trajectories[i][1][i]}")
-
-	numberOfLables = len(reference_trajectories)
-	numberOfSamples = len(reference_trajectories[list(reference_trajectories.keys())[0]])
-	accuracy = sumCorr / (numberOfLables * numberOfSamples)
+	accuracy = compareTrajectories(reference_trajectories, selected_trajectories)
 
 	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
@@ -245,39 +257,13 @@ def compareSelectedRigidBodyAgainstReference():
 def compareSelectedSkeletonAgainstReference():
 	selected_trajectories = getTrajectoriesFormatted(getSelectedSkeletonTrajectoryIDs())
 	reference_trajectories = getSkeletonReferenceFromFile()
-	sumCorr = 0
-	
+
 	if len(selected_trajectories) == 0 or len(selected_trajectories) == 0:
 		qtm.gui.message.add_message("Mocap Mimic: No skeleton selected", "Must select a skeleton to deal with", "error")
 		return
 
-	if len(selected_trajectories) != len(reference_trajectories):
-		qtm.gui.message.add_message("Mocap Mimic: Reference capture and current capture are different sizes", "The reference capture saved to file has a different number of labels than the currently selected capture", "error")
-		return
+	accuracy = compareTrajectories(reference_trajectories, selected_trajectories)
 	
-	# Iterate over all labels in the rigid body
-	for label, points in reference_trajectories.items():
-		# Iterate over each sample collected per label
-		for i in range(len(points) - 1):
-			if points[i + 1] == None or points[i] == None:
-				continue
-			if selected_trajectories[label][i + 1] == None or selected_trajectories[label][i] == None:
-				continue
-
-			RefDelta = getDifference(points[i + 1]["position"], points[i]["position"])
-			SelDelta = getDifference(selected_trajectories[label][i + 1]["position"], selected_trajectories[label][i]["position"])
-
-			corr = dotProduct(getNormalized(RefDelta), getNormalized(SelDelta))
-			sumCorr += max(0, corr)
-
-			if corr <= 0:
-				print(f"Reference: {reference_trajectories[i][1][i + 1]} and {reference_trajectories[i][1][i]}")
-				print(f"Selected: {selected_trajectories[i][1][i + 1]} and {selected_trajectories[i][1][i]}")
-
-	numberOfLables = len(reference_trajectories)
-	numberOfSamples = len(reference_trajectories[list(reference_trajectories.keys())[0]])
-	accuracy = sumCorr / (numberOfLables * numberOfSamples)
-
 	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
