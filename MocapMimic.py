@@ -172,6 +172,7 @@ def saveSelectedRigidBodyAsReference():
 	with open(rigid_body_reference_file_name, "w") as file:
 		json.dump(rigid_body_trajectories, file)
 		
+# TODO Have this also save the skeleton bone data to a seperate file
 def saveSelectedSkeletonAsReference():
 	skeleton_trajectory_ids = getSelectedSkeletonTrajectoryIDs()
 	selected_range = qtm.gui.timeline.get_selected_range()
@@ -267,6 +268,9 @@ def compareSelectedSkeletonAgainstReference():
 	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
+def compareSelectedSkeletonBonesAgainstReference():
+	return
+
 # ----------------------------------------
 # [END] COMPARING TRAJECTORIES
 # ----------------------------------------
@@ -307,7 +311,13 @@ qtm.gui.insert_menu_button(skeleton_submenu_handle, "Save Reference", skeleton_s
 skeleton_compare_selected_to_reference = "mocap_mimic_skeleton_compare_selected_to_reference"
 qtm.gui.add_command(skeleton_compare_selected_to_reference)
 qtm.gui.set_command_execute_function(skeleton_compare_selected_to_reference, compareSelectedSkeletonAgainstReference)
-qtm.gui.insert_menu_button(skeleton_submenu_handle, "Compare to Reference", skeleton_compare_selected_to_reference)
+qtm.gui.insert_menu_button(skeleton_submenu_handle, "Compare to Reference (Trajectories)", skeleton_compare_selected_to_reference)
+
+# Setting up the compare function
+skeleton_compare_selected_to_reference_using_bones = "mocap_mimic_skeleton_compare_selected_bones_to_reference"
+qtm.gui.add_command(skeleton_compare_selected_to_reference_using_bones)
+qtm.gui.set_command_execute_function(skeleton_compare_selected_to_reference_using_bones, compareSelectedSkeletonBonesAgainstReference)
+qtm.gui.insert_menu_button(skeleton_submenu_handle, "Compare to Reference (Bones)", skeleton_compare_selected_to_reference_using_bones)
 
 # Setting up the compare function
 print_selected_name = "mocap_mimic_print_selected"
