@@ -276,6 +276,30 @@ def compareSelectedSkeletonBonesAgainstReference():
 # ----------------------------------------
 
 # ----------------------------------------
+# [BEGIN] HELP
+# ----------------------------------------
+
+def printHelp():
+	print("Menu for comparing recordings for how similar they are")
+	print("")
+
+	print("Before data can be properly compared the reference recording (the one to be mimicked)")
+	print("must be saved by highlighting one of the trajectories then clicking save in the menu")
+	print("")
+
+	print("If you want to compare rigid bodies use the 'Rigid Body' submenu and if you want to")
+	print("compare people use the 'Skeleton' submenu")
+	print("")
+
+	print("Make sure to select trajectories associated with what you want to save or compare")
+	print("And do not select trajectories associated with multiple different things at once")
+	print("")
+
+# ----------------------------------------
+# [END] HELP
+# ----------------------------------------
+
+# ----------------------------------------
 # [BEGIN] ADDING MENU ITEMS
 # ----------------------------------------
 
@@ -288,6 +312,11 @@ rigid_body_submenu_handle = qtm.gui.insert_menu_submenu(mocap_mimic_menu_handle,
 
 skeleton_submenu_name = "Skeleton"
 skeleton_submenu_handle = qtm.gui.insert_menu_submenu(mocap_mimic_menu_handle, skeleton_submenu_name)
+
+print_help_name = "mocap_mimic_print_help"
+qtm.gui.add_command(print_help_name)
+qtm.gui.set_command_execute_function(print_help_name, printHelp)
+qtm.gui.insert_menu_button(mocap_mimic_menu_handle, "Help", print_help_name)
 
 # Setting up save function
 rigid_body_save_reference_function_name = "mocap_mimic_rigid_body_save_reference"
