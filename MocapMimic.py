@@ -310,7 +310,11 @@ def compareSelectedSkeletonBonesAgainstReference():
 # ----------------------------------------
 
 def drawSphere(measurement_time):
-	qtm.gui._3d.draw_sphere([0, 0, 0], 500, qtm.utilities.color.rgb(0.855, 0.161, 0.11))
+	seriesIDs = qtm.data.series.skeleton.get_series_ids()
+	index = qtm.data.series.skeleton.get_sample_index_at_time(seriesIDs[0], measurement_time)
+	mat4 = qtm.data.series.skeleton.get_sample(seriesIDs[0], index)
+	if mat4:
+		qtm.gui._3d.draw_sphere([mat4[3][0], mat4[3][1], mat4[3][2]], 100, qtm.utilities.color.rgb(0.855, 0.161, 0.11))
 
 bDrawingEnabled = False
 def drawSphereAtSkeletonRoot():
@@ -322,7 +326,7 @@ def drawSphereAtSkeletonRoot():
 	seriesIDs = qtm.data.series.skeleton.get_series_ids()
 	print(f"Series IDs: {seriesIDs}")
 
-	skeletonTrajectories = getSelectedSkeletonTrajectoryIDs(selectedSkeletonID)
+	skeletonTrajectories = getSelectedSkeletonTrajectoryIDs()
 	print(f"Skeleton Trajectory IDs: {skeletonTrajectories}")
 
 	if not bDrawingEnabled:
