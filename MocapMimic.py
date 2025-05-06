@@ -309,13 +309,17 @@ def compareSelectedSkeletonBonesAgainstReference():
 # [BEGIN] SKELETON FUNCTIONS
 # ----------------------------------------
 
+def drawSphere(measurement_time):
+	qtm.gui._3d.draw_sphere([0, 0, 0], 500, qtm.utilities.color.rgb(0.855, 0.161, 0.11))
+
 bDrawingEnabled = False
 def drawSphereAtSkeletonRoot():
+	global bDrawingEnabled
 	selectedSkeletonID = getSelectedSkeletonID()
 	print(f"Selected Skeleton: {selectedSkeletonID}")
 
 	if not bDrawingEnabled:
-		qtm.gui._3d.set_draw_function(qtm.gui._3d.draw_sphere([0, 0, 0], 500, qtm.utilities.color.rgb(0.855, 0.161, 0.11)))
+		qtm.gui._3d.set_draw_function(drawSphere)
 	else:
 		qtm.gui._3d.set_draw_function()
 	bDrawingEnabled = not bDrawingEnabled
