@@ -132,6 +132,36 @@ def getSelectedSkeletonTrajectoryIDs():
 				skeleton_trajectory_ids.append(trajectory_id)
 
 	return skeleton_trajectory_ids
+
+# NOTE This is heavily based on the above functions for getting the trajectories, it just stops sooner
+# It could probably be improved but I will not make it a priority
+def getSelectedSkeletonID():
+	selections = qtm.gui.selection.get_selections("trajectory")
+
+	if len(selections) == 0:
+		return -1
+
+	selected_segment_id = qtm.data.object.trajectory.get_skeleton_segment_id(selections[0]["id"])
+
+	if selected_segment_id == None:
+		qtm.gui.message.add_message("Mocap Mimic: Non-skeleton trajectory selected", "Not all selected trajectories are associated with a skeleton", "error")
+		return -1
+
+	selected_skeleton_id = qtm.data.object.skeleton.get_segment_skeleton_id(selected_segment_id)
+
+	# NOTE Make sure that all trajectories selected are associated with the same skeleton
+	for selection in selections:
+		segment_id = qtm.data.object.trajectory.get_skeleton_segment_id(selection["id"])
+		skeleton_id = qtm.data.object.skeleton.get_segment_skeleton_id(segment_id)
+		if skeleton_id == None:
+			qtm.gui.message.add_message("Mocap Mimic: Non-skeleton trajectory selected", "Not all selected trajectories are associated with a skeleton", "error")
+			return -1
+
+		if skeleton_id != selected_skeleton_id:
+			qtm.gui.message.add_message("Mocap Mimic: Multiple skeletons selected", "Only one skeleton should be selected at a time", "error")
+			return -1
+
+	return skeleton_id
 	
 def getTrajectoriesFormatted(trajectory_ids):
 	selected_range = qtm.gui.timeline.get_selected_range()
@@ -276,6 +306,25 @@ def compareSelectedSkeletonBonesAgainstReference():
 # ----------------------------------------
 
 # ----------------------------------------
+# [BEGIN] SKELETON FUNCTIONS
+# ----------------------------------------
+
+bDrawingEnabled = False
+def drawSphereAtSkeletonRoot():
+	selectedSkeletonID = getSelectedSkeletonID()
+	print(f"Selected Skeleton: {selectedSkeletonID}")
+
+	if not bDrawingEnabled:
+		qtm.gui._3d.set_draw_function(qtm.gui._3d.draw_sphere([0, 0, 0], 500, qtm.utilities.color.rgb(0.855, 0.161, 0.11)))
+	else:
+		qtm.gui._3d.set_draw_function()
+	bDrawingEnabled = not bDrawingEnabled
+
+# ----------------------------------------
+# [END] SKELETON FUNCTIONS
+# ----------------------------------------
+
+# ----------------------------------------
 # [BEGIN] HELP
 # ----------------------------------------
 
@@ -347,6 +396,12 @@ skeleton_compare_selected_to_reference_using_bones = "mocap_mimic_skeleton_compa
 qtm.gui.add_command(skeleton_compare_selected_to_reference_using_bones)
 qtm.gui.set_command_execute_function(skeleton_compare_selected_to_reference_using_bones, compareSelectedSkeletonBonesAgainstReference)
 qtm.gui.insert_menu_button(skeleton_submenu_handle, "Compare to Reference (Bones)", skeleton_compare_selected_to_reference_using_bones)
+
+# Setting up the draw at skeleton function
+draw_sphere_at_skeleton = "mocap_mimic_draw_sphere_at_skeleton"
+qtm.gui.add_command(draw_sphere_at_skeleton)
+qtm.gui.set_command_execute_function(draw_sphere_at_skeleton, drawSphereAtSkeletonRoot)
+qtm.gui.insert_menu_button(skeleton_submenu_handle, "Draw Sphere at Skeleton", draw_sphere_at_skeleton)
 
 # Setting up the compare function
 print_selected_name = "mocap_mimic_print_selected"
