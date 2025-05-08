@@ -62,6 +62,47 @@ def getDifference(lvec, rvec):
 # ----------------------------------------
 
 # ----------------------------------------
+# [BEGIN] MATRICES
+# ----------------------------------------
+
+# NOTE Has not been properly tested for accuracy
+# Also it just works for matrices of that are 4x4
+def multiplyMatrices(lmat, rmat):
+	mat = []
+	for i in range(len(lmat)):
+		mat.append(lmat[i][:])
+
+	tempSum =  0
+	for k in range(4):
+		for i in range(4):
+			for j in range(4):
+				tempSum += lmat[j][k] * rmat[i][j]
+			mat[i][k] = tempSum
+			tempSum = 0
+
+	return mat
+
+def multiplyVectorMatrix(vec, mat):
+	resultVec = []
+	for i in range(len(vec)):
+		sum = 0
+		for j in range(len(vec)):
+			sum += vec[j] * mat[j][i]
+		resultVec.append(sum)
+	
+	return resultVec
+
+	# return vec4(rhs.x * m[0][0] + rhs.y * m[1][0] + rhs.z * m[2][0] + rhs.w * m[3][0] 
+	# 			rhs.x * m[0][1] + rhs.y * m[1][1] + rhs.z * m[2][1] + rhs.w * m[3][1]
+	# 			rhs.x * m[0][2] + rhs.y * m[1][2] + rhs.z * m[2][2] + rhs.w * m[3][2] 
+	# 			rhs.x * m[0][3] + rhs.y * m[1][3] + rhs.z * m[2][3] + rhs.w * m[3][3]
+
+
+# ----------------------------------------
+# [END] MATRICES
+# ----------------------------------------
+
+# ----------------------------------------
 # [BEGIN] TRAJECTORIES
 # ----------------------------------------
 
@@ -323,10 +364,20 @@ def compareSelectedSkeletonBonesAgainstReference():
 
 def drawSphere(measurement_time):
 	seriesIDs = qtm.data.series.skeleton.get_series_ids()
-	index = qtm.data.series.skeleton.get_sample_index_at_time(seriesIDs[0], measurement_time)
-	mat4 = qtm.data.series.skeleton.get_sample(seriesIDs[0], index)
+	ID = seriesIDs[-3]
+	index = qtm.data.series.skeleton.get_sample_index_at_time(ID, measurement_time)
+	# print(f"Index: {index}, Range {qtm.data.series.skeleton.get_sample_ranges(ID)}")
+	mat4 = qtm.data.series.skeleton.get_sample(ID, index)
 	if mat4:
-		qtm.gui._3d.draw_sphere([mat4[3][0], mat4[3][1], mat4[3][2]], 100, qtm.utilities.color.rgb(0.855, 0.161, 0.11))
+		x = mat4[0][0]
+		y = mat4[1][1]
+		z = mat4[2][2]
+		# print(f"Drawing... {x:.2f}, {y:.2f}, {z:.2f}")
+		print(f"\n{mat4[0][0]:.2f}, {mat4[0][1]:.2f}, {mat4[0][2]:.2f}, {mat4[0][3]:.2f}\n{mat4[1][0]:.2f}, {mat4[1][1]:.2f}, {mat4[1][2]:.2f}, {mat4[1][3]:.2f}\n{mat4[2][0]:.2f}, {mat4[2][1]:.2f}, {mat4[2][2]:.2f}, {mat4[2][3]:.2f}\n{mat4[3][0]:.2f}, {mat4[3][1]:.2f}, {mat4[3][2]:.2f}, {mat4[3][3]:.2f}")
+		force = 1
+		qtm.gui._3d.draw_sphere([x * force, y * force, z * force], 300, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
+	else:
+		print(mat4)
 
 bDrawingEnabled = False
 def drawSphereAtSkeletonRoot():
