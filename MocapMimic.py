@@ -301,18 +301,18 @@ def compareTrajectories(base_trajectories, mimic_trajectories):
 	# Iterate over all labels in the rigid body
 	for label, points in base_trajectories.items():
 		mimic_label = mimic_prefix + label[len(base_prefix):]
-		print(f"mimic_label: {mimic_label}")
+		print(f"mimic_label: {mimic_label}\nlabel: {label}")
 		# Iterate over each sample collected per label
 		for i in range(len(points) - 1):
 			# Skip over this iteration if one of the data points is missing
 			# TODO This can be fixed by filling in the gaps with an average
 			if points[i + 1] == None or points[i] == None:
 				continue
-			if mimic_trajectories[label][i + 1] == None or mimic_trajectories[label][i] == None:
+			if mimic_trajectories[mimic_label][i + 1] == None or mimic_trajectories[mimic_label][i] == None:
 				continue
 
 			RefDelta = getDifference(points[i + 1]["position"], points[i]["position"])
-			SelDelta = getDifference(mimic_trajectories[label][i + 1]["position"], mimic_trajectories[label][i]["position"])
+			SelDelta = getDifference(mimic_trajectories[mimic_label][i + 1]["position"], mimic_trajectories[mimic_label][i]["position"])
 
 			corr = 0
 			if getLength(RefDelta) == 0 and getLength(SelDelta) == 0:
