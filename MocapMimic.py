@@ -65,6 +65,9 @@ def getDifference(lvec, rvec):
 # [BEGIN] MATRICES
 # ----------------------------------------
 
+def print4x4Matrix(mat):
+	print(f"\n{mat[0][0]:.2f}, {mat[0][1]:.2f}, {mat[0][2]:.2f}, {mat[0][3]:.2f}\n{mat[1][0]:.2f}, {mat[1][1]:.2f}, {mat[1][2]:.2f}, {mat[1][3]:.2f}\n{mat[2][0]:.2f}, {mat[2][1]:.2f}, {mat[2][2]:.2f}, {mat[2][3]:.2f}\n{mat[3][0]:.2f}, {mat[3][1]:.2f}, {mat[3][2]:.2f}, {mat[3][3]:.2f}")
+
 # NOTE Has not been properly tested for accuracy
 # Also it just works for matrices of that are 4x4
 def multiplyMatrices(lmat, rmat):
@@ -185,6 +188,10 @@ def getSelectedSkeletonTrajectoryIDs():
 				skeleton_trajectory_ids.append(trajectory_id)
 
 	return skeleton_trajectory_ids
+
+def getSkeletonSeriesIDs():
+	return
+	seriesIDs = qtm.data.series.skeleton.get_series_ids()
 
 # NOTE This is heavily based on the above functions for getting the trajectories, it just stops sooner
 # It could probably be improved but I will not make it a priority
@@ -373,18 +380,23 @@ def compareSelectedSkeletonBonesAgainstReference():
 
 def drawSphere(measurement_time):
 	seriesIDs = qtm.data.series.skeleton.get_series_ids()
-	ID = seriesIDs[-3]
+	ID = seriesIDs[-2]
+	t = qtm.data.object.skeleton.get_segment_name(ID)
+	print(f"Segment: {t}")
+	skeleton_ID = qtm.data.object.skeleton.get_segment_skeleton_id(ID)
+	# print(f"Skeleton: {skeleton_ID}")
+	segment_transform = qtm.data.object.skeleton.get_segment_transform(ID)
+	# print(f"Skeleton: {skeleton_ID}")
 	index = qtm.data.series.skeleton.get_sample_index_at_time(ID, measurement_time)
 	# print(f"Index: {index}, Range {qtm.data.series.skeleton.get_sample_ranges(ID)}")
 	mat4 = qtm.data.series.skeleton.get_sample(ID, index)
 	if mat4:
-		x = mat4[0][0]
-		y = mat4[1][1]
-		z = mat4[2][2]
+		x = segment_transform[0][3]
+		y = segment_transform[1][3]
+		z = segment_transform[2][3]
+		nv = multiplyVectorMatrix([x, y, z, 0], mat4)
 		# print(f"Drawing... {x:.2f}, {y:.2f}, {z:.2f}")
-		print(f"\n{mat4[0][0]:.2f}, {mat4[0][1]:.2f}, {mat4[0][2]:.2f}, {mat4[0][3]:.2f}\n{mat4[1][0]:.2f}, {mat4[1][1]:.2f}, {mat4[1][2]:.2f}, {mat4[1][3]:.2f}\n{mat4[2][0]:.2f}, {mat4[2][1]:.2f}, {mat4[2][2]:.2f}, {mat4[2][3]:.2f}\n{mat4[3][0]:.2f}, {mat4[3][1]:.2f}, {mat4[3][2]:.2f}, {mat4[3][3]:.2f}")
-		force = 1
-		qtm.gui._3d.draw_sphere([x * force, y * force, z * force], 300, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
+		qtm.gui._3d.draw_sphere([nv[0], nv[1], nv[2]], 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
 	else:
 		print(mat4)
 
