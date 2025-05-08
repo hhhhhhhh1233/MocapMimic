@@ -8,6 +8,18 @@ import json
 # [BEGIN] UTILS
 # ----------------------------------------
 
+# strings = ["QA_hips", "QA_wrist", "QA_elbow"]
+def getPrefix(strings):
+	common = 99999999
+	for i in range(len(strings) - 1):
+		for j in range(min(len(strings[i]), len(strings[i + 1]))):
+			if strings[i][j] != strings[i + 1][j]:
+				if j < common:
+					common = j
+					break
+
+	return strings[0][:common]
+
 # ----------------------------------------
 # [BEGIN] VECTORS
 # ----------------------------------------
