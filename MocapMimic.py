@@ -380,25 +380,29 @@ def compareSelectedSkeletonBonesAgainstReference():
 
 def drawSphere(measurement_time):
 	seriesIDs = qtm.data.series.skeleton.get_series_ids()
-	ID = seriesIDs[-2]
-	t = qtm.data.object.skeleton.get_segment_name(ID)
-	print(f"Segment: {t}")
-	skeleton_ID = qtm.data.object.skeleton.get_segment_skeleton_id(ID)
-	# print(f"Skeleton: {skeleton_ID}")
-	segment_transform = qtm.data.object.skeleton.get_segment_transform(ID)
-	# print(f"Skeleton: {skeleton_ID}")
-	index = qtm.data.series.skeleton.get_sample_index_at_time(ID, measurement_time)
-	# print(f"Index: {index}, Range {qtm.data.series.skeleton.get_sample_ranges(ID)}")
-	mat4 = qtm.data.series.skeleton.get_sample(ID, index)
-	if mat4:
-		x = segment_transform[0][3]
-		y = segment_transform[1][3]
-		z = segment_transform[2][3]
-		nv = multiplyVectorMatrix([x, y, z, 0], mat4)
-		# print(f"Drawing... {x:.2f}, {y:.2f}, {z:.2f}")
-		qtm.gui._3d.draw_sphere([nv[0], nv[1], nv[2]], 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
-	else:
-		print(mat4)
+
+	# TODO Save the data in this sort of dictionary instead of fetching it every frame
+	# bone_data = {}
+	# bone_data.update({"Transform": 0})
+	# bone_data.update({"ID": 0})
+
+	# A list of the bone ids that actually have to do with the selected skeleton
+	BoneIDs = []
+	selectedSkeletonID = getSelectedSkeletonID()
+	for seriesID in seriesIDs:
+		if qtm.data.object.skeleton.get_segment_skeleton_id(seriesID) == selectedSkeletonID:
+			BoneIDs.append(seriesID)
+
+	for BoneID in BoneIDs:
+		bone_transform = qtm.data.object.skeleton.get_segment_transform(BoneID)
+		curr_index = qtm.data.series.skeleton.get_sample_index_at_time(BoneID, measurement_time)
+		curr_bone_transform = qtm.data.series.skeleton.get_sample(BoneID, curr_index)
+		if curr_bone_transform:
+			x = bone_transform[0][3]
+			y = bone_transform[1][3]
+			z = bone_transform[2][3]
+			nv = multiplyVectorMatrix([x, y, z, 0], curr_bone_transform)
+			qtm.gui._3d.draw_sphere([nv[0], nv[1], nv[2]], 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
 
 bDrawingEnabled = False
 def drawSphereAtSkeletonRoot():
