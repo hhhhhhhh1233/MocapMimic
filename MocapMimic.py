@@ -294,12 +294,14 @@ def compareTrajectories(base_trajectories, mimic_trajectories):
 		qtm.gui.message.add_message("Mocap Mimic: Reference capture and current capture are different sizes", "The reference capture saved to file has a different number of labels than the currently selected capture, they are probably different types of objects", "error")
 		return
 
-	base_prefix = getPrefix(base_trajectories.keys())
-	mimic_prefix = getPrefix(mimic_trajectories.keys())
+	base_prefix = getPrefix(list(base_trajectories.keys()))
+	mimic_prefix = getPrefix(list(mimic_trajectories.keys()))
 	print(f"base_prefix: {base_prefix}\nmimic_prefix: {mimic_prefix}")
 	
 	# Iterate over all labels in the rigid body
 	for label, points in base_trajectories.items():
+		mimic_label = mimic_prefix + label[len(base_prefix):]
+		print(f"mimic_label: {mimic_label}")
 		# Iterate over each sample collected per label
 		for i in range(len(points) - 1):
 			# Skip over this iteration if one of the data points is missing
