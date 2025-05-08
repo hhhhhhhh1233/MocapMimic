@@ -300,8 +300,11 @@ def compareTrajectories(base_trajectories, mimic_trajectories):
 	
 	# Iterate over all labels in the rigid body
 	for label, points in base_trajectories.items():
+
+		# NOTE This creates the matching label that the mimic trajectory ought to have
+		# It assumes that the trajectories are identically named aside from their prefix
 		mimic_label = mimic_prefix + label[len(base_prefix):]
-		print(f"mimic_label: {mimic_label}\nlabel: {label}")
+
 		# Iterate over each sample collected per label
 		for i in range(len(points) - 1):
 			# Skip over this iteration if one of the data points is missing
