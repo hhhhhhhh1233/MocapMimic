@@ -401,13 +401,15 @@ def drawSphere(measurement_time):
 		# Get all of the parent transforms and apply them to the child
 		transforms = []
 		parent_id = qtm.data.object.skeleton.get_segment_parent_id(BoneID)
-		parent_transform = qtm.data.object.skeleton.get_segment_transform(parent_id)
-		transforms.append(parent_transform)
+		if parent_id != None:
+			parent_transform = qtm.data.object.skeleton.get_segment_transform(parent_id)
+			transforms.append(parent_transform)
 
 		while parent_id != None:
 			parent_id = qtm.data.object.skeleton.get_segment_parent_id(parent_id)
-			parent_transform = qtm.data.object.skeleton.get_segment_transform(parent_id)
-			transforms.append(parent_transform)
+			if parent_id != None:
+				parent_transform = qtm.data.object.skeleton.get_segment_transform(parent_id)
+				transforms.append(parent_transform)
 
 		if curr_bone_transform:
 			x = bone_transform[0][3]
@@ -417,7 +419,9 @@ def drawSphere(measurement_time):
 			for i in range(len(transforms)):
 				result_mat = multiplyMatrices(result_mat, transforms[i])
 			nv = multiplyVectorMatrix([x, y, z, 0], result_mat)
+			onv = multiplyVectorMatrix([x, y, z, 0], curr_bone_transform)
 			qtm.gui._3d.draw_sphere([nv[0], nv[1], nv[2]], 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
+			qtm.gui._3d.draw_sphere([onv[0], onv[1], onv[2]], 100, qtm.utilities.color.rgb(0.4, 0.661, 0.91))
 
 bDrawingEnabled = False
 def drawSphereAtSkeletonRoot():
