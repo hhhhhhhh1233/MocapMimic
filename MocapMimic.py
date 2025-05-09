@@ -401,13 +401,15 @@ def drawSphere(measurement_time):
 		# Get all of the parent transforms and apply them to the child
 		transforms = []
 		parent_id = qtm.data.object.skeleton.get_segment_parent_id(BoneID)
-		parent_transform = qtm.data.object.skeleton.get_segment_transform(parent_id)
-		transforms.append(parent_transform)
+		if parent_id != None:
+			parent_transform = qtm.data.object.skeleton.get_segment_transform(parent_id)
+			transforms.append(parent_transform)
 
 		while parent_id != None:
 			parent_id = qtm.data.object.skeleton.get_segment_parent_id(parent_id)
-			parent_transform = qtm.data.object.skeleton.get_segment_transform(parent_id)
-			transforms.append(parent_transform)
+			if parent_id != None:
+				parent_transform = qtm.data.object.skeleton.get_segment_transform(parent_id)
+				transforms.append(parent_transform)
 
 		if curr_bone_transform:
 			x = bone_transform[0][3]
