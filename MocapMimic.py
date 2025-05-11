@@ -394,8 +394,8 @@ def drawSphere(measurement_time):
 
 	for BoneID in BoneIDs:
 		# print(qtm.data.object.skeleton.get_segment_name(BoneID))
-		if qtm.data.object.skeleton.get_segment_name(BoneID) != "Hips":
-			continue
+		# if qtm.data.object.skeleton.get_segment_name(BoneID) != "Hips" and qtm.data.object.skeleton.get_segment_name(BoneID) != "Spine":
+			# continue
 
 		curr_index = qtm.data.series.skeleton.get_sample_index_at_time(BoneID, measurement_time)
 		curr_bone_transform = qtm.data.series.skeleton.get_sample(BoneID, curr_index)
@@ -404,20 +404,25 @@ def drawSphere(measurement_time):
 		transforms = []
 		parent_id = qtm.data.object.skeleton.get_segment_parent_id(BoneID)
 		if parent_id != None:
-			parent_transform = qtm.data.object.skeleton.get_segment_transform(parent_id)
+			curr_index = qtm.data.series.skeleton.get_sample_index_at_time(parent_id, measurement_time)
+			parent_transform = qtm.data.series.skeleton.get_sample(parent_id, curr_index)
 			transforms.append(parent_transform)
 
 		while parent_id != None:
 			parent_id = qtm.data.object.skeleton.get_segment_parent_id(parent_id)
 			if parent_id != None:
-				parent_transform = qtm.data.object.skeleton.get_segment_transform(parent_id)
+				curr_index = qtm.data.series.skeleton.get_sample_index_at_time(parent_id, measurement_time)
+				parent_transform = qtm.data.series.skeleton.get_sample(parent_id, curr_index)
 				transforms.append(parent_transform)
-
-		if curr_bone_transform:
-			x = curr_bone_transform[0][3]
-			y = curr_bone_transform[1][3]
-			z = curr_bone_transform[2][3]
-			qtm.gui._3d.draw_sphere([x, y, z], 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
+        
+		result_transform = copy.deepcopy(curr_bone_transform)#[[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]
+		for transform in transforms:
+			result_transform = multiplyMatrices(result_transform, transform)
+        
+		x = result_transform[0][3]
+		y = result_transform[1][3]
+		z = result_transform[2][3]
+		qtm.gui._3d.draw_sphere([x, y, z], 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
 
 bDrawingEnabled = False
 def drawSphereAtSkeletonRoot():
