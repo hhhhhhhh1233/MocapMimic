@@ -377,20 +377,15 @@ def compareSelectedSkeletonBonesAgainstReference():
 # [BEGIN] SKELETON FUNCTIONS
 # ----------------------------------------
 
+BoneIDs = []
+
 def drawSphere(measurement_time):
-	seriesIDs = qtm.data.series.skeleton.get_series_ids()
+	global BoneIDs
 
 	# TODO Save the data in this sort of dictionary instead of fetching it every frame
 	# bone_data = {}
 	# bone_data.update({"Transform": 0})
 	# bone_data.update({"ID": 0})
-
-	# A list of the bone ids that actually have to do with the selected skeleton
-	BoneIDs = []
-	selectedSkeletonID = getSelectedSkeletonID()
-	for seriesID in seriesIDs:
-		if qtm.data.object.skeleton.get_segment_skeleton_id(seriesID) == selectedSkeletonID:
-			BoneIDs.append(seriesID)
 
 	for BoneID in BoneIDs:
 		# print(qtm.data.object.skeleton.get_segment_name(BoneID))
@@ -426,7 +421,15 @@ def drawSphere(measurement_time):
 
 bDrawingEnabled = False
 def drawSphereAtSkeletonRoot():
+	global BoneIDs
 	global bDrawingEnabled
+
+	seriesIDs = qtm.data.series.skeleton.get_series_ids()
+    # A list of the bone ids that actually have to do with the selected skeleton
+	selectedSkeletonID = getSelectedSkeletonID()
+	for seriesID in seriesIDs:
+		if qtm.data.object.skeleton.get_segment_skeleton_id(seriesID) == selectedSkeletonID:
+			BoneIDs.append(seriesID)
 	
 	selectedSkeletonID = getSelectedSkeletonID()
 	print(f"Selected Skeleton: {selectedSkeletonID}")
