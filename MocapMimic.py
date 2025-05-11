@@ -3,6 +3,7 @@ from qtm.data.series import _3d
 from qtm.data.object import trajectory
 import math
 import json
+import copy
 
 # ----------------------------------------
 # [BEGIN] UTILS
@@ -71,9 +72,7 @@ def print4x4Matrix(mat):
 # NOTE Has not been properly tested for accuracy
 # Also it just works for matrices of that are 4x4
 def multiplyMatrices(lmat, rmat):
-	mat = []
-	for i in range(len(lmat)):
-		mat.append(lmat[i][:])
+	mat = copy.deepcopy(lmat)
 
 	tempSum =  0
 	for k in range(4):
@@ -394,7 +393,10 @@ def drawSphere(measurement_time):
 			BoneIDs.append(seriesID)
 
 	for BoneID in BoneIDs:
-		bone_transform = qtm.data.object.skeleton.get_segment_transform(BoneID)
+		# print(qtm.data.object.skeleton.get_segment_name(BoneID))
+		if qtm.data.object.skeleton.get_segment_name(BoneID) != "Hips":
+			continue
+
 		curr_index = qtm.data.series.skeleton.get_sample_index_at_time(BoneID, measurement_time)
 		curr_bone_transform = qtm.data.series.skeleton.get_sample(BoneID, curr_index)
 
@@ -412,16 +414,10 @@ def drawSphere(measurement_time):
 				transforms.append(parent_transform)
 
 		if curr_bone_transform:
-			x = bone_transform[0][3]
-			y = bone_transform[1][3]
-			z = bone_transform[2][3]
-			result_mat = curr_bone_transform
-			for i in range(len(transforms)):
-				result_mat = multiplyMatrices(result_mat, transforms[i])
-			nv = multiplyVectorMatrix([x, y, z, 0], result_mat)
-			onv = multiplyVectorMatrix([x, y, z, 0], curr_bone_transform)
-			qtm.gui._3d.draw_sphere([nv[0], nv[1], nv[2]], 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
-			qtm.gui._3d.draw_sphere([onv[0], onv[1], onv[2]], 100, qtm.utilities.color.rgb(0.4, 0.661, 0.91))
+			x = curr_bone_transform[0][3]
+			y = curr_bone_transform[1][3]
+			z = curr_bone_transform[2][3]
+			qtm.gui._3d.draw_sphere([x, y, z], 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
 
 bDrawingEnabled = False
 def drawSphereAtSkeletonRoot():
@@ -429,6 +425,11 @@ def drawSphereAtSkeletonRoot():
 	
 	selectedSkeletonID = getSelectedSkeletonID()
 	print(f"Selected Skeleton: {selectedSkeletonID}")
+
+	skeletonSegment = qtm.data.object.skeleton.find_segment(selectedSkeletonID, "Hips")
+	skeletonSegmentChildren = qtm.data.object.skeleton.get_segment_child_ids(skeletonSegment)
+	for child in skeletonSegmentChildren:
+		print(f"Child: {qtm.data.object.skeleton.get_segment_name(child)}")
 
 	seriesIDs = qtm.data.series.skeleton.get_series_ids()
 	print(f"Series IDs: {seriesIDs}")
