@@ -430,11 +430,12 @@ def saveBoneDataToFile(RootBoneID):
 	RootBoneTransforms = qtm.data.series.skeleton.get_samples(RootBoneID)
 
 	Skeleton.update({"Name": RootBoneName})
+	Skeleton.update({"ID": RootBoneID})
 	# Skeleton.update({"Transforms": RootBoneTransforms})
 	Skeleton.update({"Children": []})
 
 	ToConsider = []
-	ToConsider.append({"Parent": Skeleton, "Children": qtm.data.object.skeleton.get_child_ids(RootBoneID)})
+	ToConsider.append({"Parent": Skeleton, "Children": qtm.data.object.skeleton.get_segment_child_ids(RootBoneID)})
 
 	while len(ToConsider) > 0:
 		CurrentBone = ToConsider.pop(0)
@@ -442,12 +443,13 @@ def saveBoneDataToFile(RootBoneID):
 		for Child in CurrentBone["Children"]:
 			Bone = {}
 			Bone.update({"Name": qtm.data.object.skeleton.get_segment_name(Child)})
+			Bone.update({"ID": Child})
 			# Bone.update({"Transforms": qtm.data.series.skeleton.get_samples(Child)})
 			Bone.update({"Children": []})
 
 			CurrentBone["Parent"]["Children"].append(Bone)
 
-			ToConsider.append({"Parent": Bone, "Children": qtm.data.object.skeleton.get_child_ids(Child)})
+			ToConsider.append({"Parent": Bone, "Children": qtm.data.object.skeleton.get_segment_child_ids(Child)})
 
 	print(f"Skeleton: {Skeleton}")
 
