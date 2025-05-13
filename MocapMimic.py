@@ -247,6 +247,7 @@ def getTrajectoriesFormatted(trajectory_ids):
 	
 rigid_body_reference_file_name = f"{qtm.settings.directory.get_project_directory()}MocapMimicRigidBodyReference.json"
 skeleton_reference_file_name = f"{qtm.settings.directory.get_project_directory()}MocapMimicSkeletonReference.json"
+skeleton_reference_bones_file_name = f"{qtm.settings.directory.get_project_directory()}MocapMimicSkeletonBoneReference.json"
 
 def saveSelectedRigidBodyAsReference():
 	rigid_body_trajectory_ids = getSelectedRigidBodyTrajectoryIDs()
@@ -431,7 +432,7 @@ def saveBoneDataToFile(RootBoneID):
 
 	Skeleton.update({"Name": RootBoneName})
 	Skeleton.update({"ID": RootBoneID})
-	# Skeleton.update({"Transforms": RootBoneTransforms})
+	Skeleton.update({"Transforms": RootBoneTransforms})
 	Skeleton.update({"Children": []})
 
 	ToConsider = []
@@ -444,26 +445,16 @@ def saveBoneDataToFile(RootBoneID):
 			Bone = {}
 			Bone.update({"Name": qtm.data.object.skeleton.get_segment_name(Child)})
 			Bone.update({"ID": Child})
-			# Bone.update({"Transforms": qtm.data.series.skeleton.get_samples(Child)})
+			Bone.update({"Transforms": qtm.data.series.skeleton.get_samples(Child)})
 			Bone.update({"Children": []})
 
 			CurrentBone["Parent"]["Children"].append(Bone)
 
 			ToConsider.append({"Parent": Bone, "Children": qtm.data.object.skeleton.get_segment_child_ids(Child)})
 
-	print(f"Skeleton: {Skeleton}")
-
-	# Children = []
-	# Children.append({"ParentDict": Skeleton, "Children": qtm.data.object.skeleton.get_child_ids(RootBoneID)})
-
-	# while len(Children) > 0:
-	# 	for Child in Children[0]["Children"]:
-	# 		BoneName = qtm.data.object.skeleton.get_segment_name(Child)
-	# 		BoneTransforms = qtm.data.series.skeleton.get_samples(Child)
-	# 		Children[0]["ParentDict"].update({"Name": BoneName})
-	# 		Children[0]["ParentDict"].update({"Transforms": BoneTransforms})
-	# 		Children[0]["ParentDict"].update({"Children": {}})
-	# 		Children.append({"ParentDict": Children[0], "Children": qtm.data.object.skeleton.get_child_ids(Child)})
+	# print(f"Skeleton: {Skeleton}")
+	with open(skeleton_reference_bones_file_name, "w") as file:
+		json.dump(Skeleton, file)
 
 def getAllParentTransformsAtIndex(BoneID, Index):
 	# Get all of the parent transforms and apply them to the child
