@@ -421,11 +421,18 @@ BoneIDs = []
 # 	]
 # }
 
-def printBoneData():
-	selectedSkeleton = getSelectedSkeletonID()
-	saveBoneDataToFile(qtm.data.object.skeleton.get_skeleton_root_id(selectedSkeleton))
+def drawSkeletonSpheresRecursive(BoneDict, Index = 0, Transform = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]):
+	for Child in BoneDict["Children"]:
+		drawSkeletonSpheresRecursive(Child, Index, multiplyMatrices(BoneDict["Transforms"][Index], Transform))
 
-def saveBoneDataToFile(RootBoneID):
+	x = Transform[0][3]
+	y = Transform[1][3]
+	z = Transform[2][3]
+	qtm.gui._3d.draw_sphere([x, y, z], 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
+
+def getSkeletonAsDict(SkeletonID):
+	RootBoneID = qtm.data.object.skeleton.get_skeleton_root_id(SkeletonID)
+
 	Skeleton = {}
 	RootBoneName = qtm.data.object.skeleton.get_segment_name(RootBoneID)
 	RootBoneTransforms = qtm.data.series.skeleton.get_samples(RootBoneID)
@@ -451,6 +458,13 @@ def saveBoneDataToFile(RootBoneID):
 			CurrentBone["Parent"]["Children"].append(Bone)
 
 			ToConsider.append({"Parent": Bone, "Children": qtm.data.object.skeleton.get_segment_child_ids(Child)})
+	
+	return Skeleton
+
+def saveBoneDataToFile():
+	selectedSkeleton = getSelectedSkeletonID()
+
+	Skeleton = getSkeletonAsDict(selectedSkeleton)
 
 	# print(f"Skeleton: {Skeleton}")
 	with open(skeleton_reference_bones_file_name, "w") as file:
@@ -521,6 +535,11 @@ def drawSphere(measurement_time):
 	# bone_data = {}
 	# bone_data.update({"Transform": 0})
 	# bone_data.update({"ID": 0})
+
+	# NOTE This is just a hacky test, this paragraph can be removed without harm
+	curr_index = qtm.data.series.skeleton.get_sample_index_at_time(BoneIDs[0], measurement_time)
+	drawSkeletonSpheresRecursive(getSkeletonAsDict(getSelectedSkeletonID()), curr_index)
+	return
 
 	for BoneID in BoneIDs:
 		# print(qtm.data.object.skeleton.get_segment_name(BoneID))
@@ -666,8 +685,8 @@ qtm.gui.insert_menu_button(skeleton_submenu_handle, "Compare to Reference (Bones
 # Setting up the skeleton print function
 skeleton_print_bone_structure = "mocap_mimic_skeleton_print_bone_structure"
 qtm.gui.add_command(skeleton_print_bone_structure)
-qtm.gui.set_command_execute_function(skeleton_print_bone_structure, printBoneData)
-qtm.gui.insert_menu_button(skeleton_submenu_handle, "Print skeleton structure", skeleton_print_bone_structure)
+qtm.gui.set_command_execute_function(skeleton_print_bone_structure, saveBoneDataToFile)
+qtm.gui.insert_menu_button(skeleton_submenu_handle, "Save skeleton data to file", skeleton_print_bone_structure)
 
 # Setting up the draw at skeleton function
 draw_sphere_at_skeleton = "mocap_mimic_draw_sphere_at_skeleton"
