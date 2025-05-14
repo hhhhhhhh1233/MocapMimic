@@ -528,8 +528,11 @@ def getBoneTransformAtIndex(BoneID, Index):
 def compareSkeletonPose(lskel, rskel):
 	return
 
+CurrentSkeleton = {}
+
 def drawSphere(measurement_time):
 	global BoneIDs
+	global CurrentSkeleton
 
 	# TODO Save the data in this sort of dictionary instead of fetching it every frame
 	# bone_data = {}
@@ -538,7 +541,7 @@ def drawSphere(measurement_time):
 
 	# NOTE This is just a hacky test, this paragraph can be removed without harm
 	curr_index = qtm.data.series.skeleton.get_sample_index_at_time(BoneIDs[0], measurement_time)
-	drawSkeletonSpheresRecursive(getSkeletonAsDict(getSelectedSkeletonID()), curr_index)
+	drawSkeletonSpheresRecursive(CurrentSkeleton, curr_index)
 	return
 
 	for BoneID in BoneIDs:
@@ -577,6 +580,8 @@ bDrawingEnabled = False
 def drawSphereAtSkeletonRoot():
 	global BoneIDs
 	global bDrawingEnabled
+	global CurrentSkeleton
+	CurrentSkeleton = getSkeletonAsDict(getSelectedSkeletonID())
 
 	seriesIDs = qtm.data.series.skeleton.get_series_ids()
     # A list of the bone ids that actually have to do with the selected skeleton
