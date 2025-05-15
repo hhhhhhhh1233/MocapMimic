@@ -478,13 +478,13 @@ def compareSkeletonPose(BoneDict, MimicBoneDict, Index = 0, MimicIndex = 0, Pare
 	Py = ParentTransform[1][3]
 	Pz = ParentTransform[2][3]
 
-	mx = Transform[0][3]
-	my = Transform[1][3]
-	mz = Transform[2][3]
+	mx = MimicTransform[0][3]
+	my = MimicTransform[1][3]
+	mz = MimicTransform[2][3]
 
-	mPx = ParentTransform[0][3]
-	mPy = ParentTransform[1][3]
-	mPz = ParentTransform[2][3]
+	mPx = MimicParentTransform[0][3]
+	mPy = MimicParentTransform[1][3]
+	mPz = MimicParentTransform[2][3]
 
 	currentPosition = [x, y, z]
 	parentPosition = [Px, Py, Pz]
