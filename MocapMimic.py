@@ -380,7 +380,14 @@ def compareSelectedSkeletonAgainstReference():
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
 def compareSelectedSkeletonBonesAgainstReference():
-	print(f"Accuracy of bones: {compareSkeleton()}")
+	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID())
+	referenceSkeleton = getSkeletonBonesReferenceFromFile()
+
+	sumDotProduct, numberOfBones = compareSkeletonPose(referenceSkeleton, mimicSkeleton, 0)
+	accuracy = sumDotProduct / numberOfBones
+
+	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
+	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
 # ----------------------------------------
 # [END] COMPARING TRAJECTORIES
@@ -482,15 +489,6 @@ def compareSkeletonPose(BoneDict, MimicBoneDict, Index = 0, ParentTransform = [[
 	mimicJointDirection = getNormalized(getDifference(mimicCurrentPosition, mimicParentPosition))
 
 	return sumAccuracy + dotProduct(jointDirection, mimicJointDirection), numberOfBones + 1
-
-def compareSkeleton():
-	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID())
-	referenceSkeleton = getSkeletonBonesReferenceFromFile()
-
-	sumDotProduct, numberOfBones = compareSkeletonPose(referenceSkeleton, mimicSkeleton, 0)
-	accuracy = sumDotProduct / numberOfBones
-
-	return accuracy
 
 def getSkeletonAsDict(SkeletonID):
 	RootBoneID = qtm.data.object.skeleton.get_skeleton_root_id(SkeletonID)
