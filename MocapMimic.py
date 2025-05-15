@@ -376,12 +376,18 @@ def compareSelectedSkeletonAgainstReference() -> None:
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
 def compareSelectedSkeletonBonesAgainstReference() -> None:
-	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID())
+	selected_range = qtm.gui.timeline.get_selected_range()
+	print(f"Selected Range: {selected_range}")
+	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID(), selected_range)
 	referenceSkeleton = getSkeletonBonesReferenceFromFile()
 
-	sumDotProduct, numberOfBones = compareSkeletonPose(referenceSkeleton, mimicSkeleton, 0)
-	accuracy = sumDotProduct / numberOfBones
+	sumAccuracy = 0
+	numbersOfMeasurement = len(referenceSkeleton["Transforms"])
+	for i in range(len(referenceSkeleton["Transforms"])):
+		sumDotProduct, numberOfBones = compareSkeletonPose(referenceSkeleton, mimicSkeleton, i, i)
+		sumAccuracy += sumDotProduct / numberOfBones
 
+	accuracy = sumAccuracy / numbersOfMeasurement
 	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
@@ -448,15 +454,15 @@ def drawSkeletonSpheresRecursive(BoneDict: dict[str], Index: int = 0, ParentTran
 	qtm.gui._3d.draw_sphere([x, y, z], 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
 
 # NOTE The skeletons have to have the same structure, otherwise this will fail
-def compareSkeletonPose(BoneDict, MimicBoneDict, Index = 0, ParentTransform = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]], MimicParentTransform = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]):
+def compareSkeletonPose(BoneDict, MimicBoneDict, Index = 0, MimicIndex = 0, ParentTransform = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]], MimicParentTransform = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]):
 	Transform = multiplyMatrices(BoneDict["Transforms"][Index], ParentTransform)
-	MimicTransform = multiplyMatrices(MimicBoneDict["Transforms"][Index], MimicParentTransform)
+	MimicTransform = multiplyMatrices(MimicBoneDict["Transforms"][MimicIndex], MimicParentTransform)
 
 	sumAccuracy = 0
 	numberOfBones = 0
 
 	for i in range(len(BoneDict["Children"])):
-		accuracy, bonesNum = compareSkeletonPose(BoneDict["Children"][i], MimicBoneDict["Children"][i], Index, Transform, MimicTransform)
+		accuracy, bonesNum = compareSkeletonPose(BoneDict["Children"][i], MimicBoneDict["Children"][i], Index, MimicIndex, Transform, MimicTransform)
 		sumAccuracy += accuracy
 		numberOfBones += bonesNum
 
