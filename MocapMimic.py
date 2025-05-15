@@ -275,7 +275,19 @@ def saveSelectedSkeletonAsReference():
 	
 	with open(skeleton_reference_file_name, "w") as file:
 		json.dump(skeleton_trajectories, file)
-		
+
+	selectedSkeleton = getSelectedSkeletonID()
+
+	Skeleton = getSkeletonAsDict(selectedSkeleton)
+
+	with open(skeleton_reference_bones_file_name, "w") as file:
+		json.dump(Skeleton, file)
+
+def getSkeletonBonesReferenceFromFile():
+	with open(skeleton_reference_bones_file_name, "r") as file:
+		skeleton = json.load(file)    
+		return skeleton
+
 def getRigidBodyReferenceFromFile():
 	with open(rigid_body_reference_file_name, "r") as file:
 		rigid_body_trajectories = json.load(file)    
@@ -421,16 +433,64 @@ BoneIDs = []
 # 	]
 # }
 
-def drawSkeletonSpheresRecursive(BoneDict, Index = 0, Transform = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]):
-	for Child in BoneDict["Children"]:
-		drawSkeletonSpheresRecursive(Child, Index, multiplyMatrices(BoneDict["Transforms"][Index], Transform))
+def drawSkeletonSpheresRecursive(BoneDict, Index = 0, ParentTransform = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]):
+	Transform = multiplyMatrices(BoneDict["Transforms"][Index], ParentTransform)
 
-	Transform = multiplyMatrices(BoneDict["Transforms"][Index], Transform)
+	for Child in BoneDict["Children"]:
+		drawSkeletonSpheresRecursive(Child, Index, Transform)
 
 	x = Transform[0][3]
 	y = Transform[1][3]
 	z = Transform[2][3]
 	qtm.gui._3d.draw_sphere([x, y, z], 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
+
+# NOTE The skeletons have to have the same structure, otherwise this will fail
+def compareSkeletonPose(BoneDict, MimicBoneDict, Index = 0, ParentTransform = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]], MimicParentTransform = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]):
+	Transform = multiplyMatrices(BoneDict["Transforms"][Index], ParentTransform)
+	MimicTransform = multiplyMatrices(MimicBoneDict["Transforms"][Index], MimicParentTransform)
+
+	sumAccuracy = 0
+	numberOfBones = 0
+
+	for i in range(len(BoneDict["Children"])):
+		accuracy, bonesNum = compareSkeletonPose(BoneDict["Children"][i], MimicBoneDict["Children"][i], Index, Transform, MimicTransform)
+		sumAccuracy += accuracy
+		numberOfBones += bonesNum
+
+	x = Transform[0][3]
+	y = Transform[1][3]
+	z = Transform[2][3]
+
+	Px = ParentTransform[0][3]
+	Py = ParentTransform[1][3]
+	Pz = ParentTransform[2][3]
+
+	mx = Transform[0][3]
+	my = Transform[1][3]
+	mz = Transform[2][3]
+
+	mPx = ParentTransform[0][3]
+	mPy = ParentTransform[1][3]
+	mPz = ParentTransform[2][3]
+
+	currentPosition = [x, y, z]
+	parentPosition = [Px, Py, Pz]
+	jointDirection = getNormalized(getDifference(currentPosition, parentPosition))
+
+	mimicCurrentPosition = [mx, my, mz]
+	mimicParentPosition = [mPx, mPy, mPz]
+	mimicJointDirection = getNormalized(getDifference(mimicCurrentPosition, mimicParentPosition))
+
+	return sumAccuracy + dotProduct(jointDirection, mimicJointDirection), numberOfBones + 1
+
+def compareSkeleton():
+	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID())
+	referenceSkeleton = getSkeletonBonesReferenceFromFile()
+
+	sumDotProduct, numberOfBones = compareSkeletonPose(referenceSkeleton, mimicSkeleton, 0)
+	accuracy = sumDotProduct / numberOfBones
+
+	return accuracy
 
 def getSkeletonAsDict(SkeletonID):
 	RootBoneID = qtm.data.object.skeleton.get_skeleton_root_id(SkeletonID)
@@ -462,15 +522,6 @@ def getSkeletonAsDict(SkeletonID):
 			ToConsider.append({"Parent": Bone, "Children": qtm.data.object.skeleton.get_segment_child_ids(Child)})
 	
 	return Skeleton
-
-def saveBoneDataToFile():
-	selectedSkeleton = getSelectedSkeletonID()
-
-	Skeleton = getSkeletonAsDict(selectedSkeleton)
-
-	# print(f"Skeleton: {Skeleton}")
-	with open(skeleton_reference_bones_file_name, "w") as file:
-		json.dump(Skeleton, file)
 
 def getAllParentTransformsAtIndex(BoneID, Index):
 	# Get all of the parent transforms and apply them to the child
@@ -526,9 +577,6 @@ def getBoneTransformAtIndex(BoneID, Index):
 		result_transform = multiplyMatrices(result_transform, transform)
 	
 	return result_transform
-
-def compareSkeletonPose(lskel, rskel):
-	return
 
 CurrentSkeleton = {}
 
@@ -688,12 +736,6 @@ skeleton_compare_selected_to_reference_using_bones = "mocap_mimic_skeleton_compa
 qtm.gui.add_command(skeleton_compare_selected_to_reference_using_bones)
 qtm.gui.set_command_execute_function(skeleton_compare_selected_to_reference_using_bones, compareSelectedSkeletonBonesAgainstReference)
 qtm.gui.insert_menu_button(skeleton_submenu_handle, "Compare to Reference (Bones)", skeleton_compare_selected_to_reference_using_bones)
-
-# Setting up the skeleton print function
-skeleton_print_bone_structure = "mocap_mimic_skeleton_print_bone_structure"
-qtm.gui.add_command(skeleton_print_bone_structure)
-qtm.gui.set_command_execute_function(skeleton_print_bone_structure, saveBoneDataToFile)
-qtm.gui.insert_menu_button(skeleton_submenu_handle, "Save skeleton data to file", skeleton_print_bone_structure)
 
 # Setting up the draw at skeleton function
 draw_sphere_at_skeleton = "mocap_mimic_draw_sphere_at_skeleton"
