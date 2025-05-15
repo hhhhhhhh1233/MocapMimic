@@ -10,7 +10,7 @@ import copy
 # ----------------------------------------
 
 # strings = ["QA_hips", "QA_wrist", "QA_elbow"]
-def getPrefix(strings):
+def getPrefix(strings: list[str]) -> str:
 	common = 99999999
 	for i in range(len(strings) - 1):
 		for j in range(min(len(strings[i]), len(strings[i + 1]))):
@@ -25,19 +25,19 @@ def getPrefix(strings):
 # [BEGIN] VECTORS
 # ----------------------------------------
 
-def getLength(vec):
+def getLength(vec: list[float]) -> float:
 	sum = 0
 	for i in range(len(vec)):
 		sum += vec[i] * vec[i]
 	return math.sqrt(sum)
 
-def dotProduct(Vec1, Vec2):
+def dotProduct(Vec1: list[float], Vec2: list[float]) -> float:
 	sum = 0
 	for i in range(len(Vec1)):
 		sum += Vec1[i] * Vec2[i]
 	return sum
 
-def getNormalized(vec):
+def getNormalized(vec: list[float]) -> list[float]:
 	length = getLength(vec)
 	if length == 0:
 		return vec
@@ -46,13 +46,13 @@ def getNormalized(vec):
 		resultVec[i] /= length
 	return resultVec
 	
-def getDistance(vec1, vec2):
+def getDistance(vec1: list[float], vec2: list[float]) -> float:
 	diffVec = vec2[:]
 	for i in range(len(diffVec)):
 		diffVec[i] -= vec1[i]
 	return getLength(diffVec)
 
-def getDifference(lvec, rvec):
+def getDifference(lvec: list[float], rvec: list[float]) -> list[float]:
 	resultVec = lvec[:]
 	for i in range(len(lvec)):
 		resultVec[i] -= rvec[i]
@@ -66,12 +66,12 @@ def getDifference(lvec, rvec):
 # [BEGIN] MATRICES
 # ----------------------------------------
 
-def print4x4Matrix(mat):
+def print4x4Matrix(mat: list[list[float]]) -> None:
 	print(f"\n{mat[0][0]:.2f}, {mat[0][1]:.2f}, {mat[0][2]:.2f}, {mat[0][3]:.2f}\n{mat[1][0]:.2f}, {mat[1][1]:.2f}, {mat[1][2]:.2f}, {mat[1][3]:.2f}\n{mat[2][0]:.2f}, {mat[2][1]:.2f}, {mat[2][2]:.2f}, {mat[2][3]:.2f}\n{mat[3][0]:.2f}, {mat[3][1]:.2f}, {mat[3][2]:.2f}, {mat[3][3]:.2f}")
 
 # NOTE Has not been properly tested for accuracy
 # Also it just works for matrices of that are 4x4
-def multiplyMatrices(lmat, rmat):
+def multiplyMatrices(lmat: list[list[float]], rmat: list[list[float]]) -> list[list[float]]:
 	mat = copy.deepcopy(lmat)
 
 	tempSum =  0
@@ -84,7 +84,7 @@ def multiplyMatrices(lmat, rmat):
 
 	return mat
 
-def multiplyVectorMatrix(vec, mat):
+def multiplyVectorMatrix(vec: list[float], mat: list[list[float]]) -> list[float]:
 	resultVec = []
 	for i in range(len(vec)):
 		sum = 0
@@ -108,7 +108,7 @@ def multiplyVectorMatrix(vec, mat):
 # [BEGIN] TRAJECTORIES
 # ----------------------------------------
 
-def printSelected():
+def printSelected() -> None:
 	trajectory_selections = qtm.gui.selection.get_selections("trajectory")
 	bone_selections = qtm.gui.selection.get_selections("bone")
 
@@ -123,7 +123,7 @@ def printSelected():
 		skeleton_segment_id = qtm.data.object.trajectory.get_skeleton_segment_id(trajectory["id"])
 		print(f"skeleton_segment_id: {skeleton_segment_id}")
 
-def getSelectedRigidBodyTrajectoryIDs():
+def getSelectedRigidBodyTrajectoryIDs() -> list[int]:
 	trajectory_ids = qtm.data.object.trajectory.get_trajectory_ids()
 	rigid_body_trajectory_ids = []
 	selections = qtm.gui.selection.get_selections("trajectory")
@@ -149,7 +149,7 @@ def getSelectedRigidBodyTrajectoryIDs():
 			
 	return rigid_body_trajectory_ids
 
-def getSelectedSkeletonTrajectoryIDs():
+def getSelectedSkeletonTrajectoryIDs() -> list[int]:
 	trajectory_ids = qtm.data.object.trajectory.get_trajectory_ids()
 	skeleton_trajectory_ids = []
 	selections = qtm.gui.selection.get_selections("trajectory")
@@ -188,13 +188,9 @@ def getSelectedSkeletonTrajectoryIDs():
 
 	return skeleton_trajectory_ids
 
-def getSkeletonSeriesIDs():
-	return
-	seriesIDs = qtm.data.series.skeleton.get_series_ids()
-
 # NOTE This is heavily based on the above functions for getting the trajectories, it just stops sooner
 # It could probably be improved but I will not make it a priority
-def getSelectedSkeletonID():
+def getSelectedSkeletonID() -> int:
 	selections = qtm.gui.selection.get_selections("trajectory")
 
 	if len(selections) == 0:
@@ -222,7 +218,7 @@ def getSelectedSkeletonID():
 
 	return skeleton_id
 	
-def getTrajectoriesFormatted(trajectory_ids):
+def getTrajectoriesFormatted(trajectory_ids: list[int]) -> dict[int: list[list[list[float]]]]:
 	selected_range = qtm.gui.timeline.get_selected_range()
 	rigid_body_trajectories = {}
 	
@@ -249,7 +245,7 @@ rigid_body_reference_file_name = f"{qtm.settings.directory.get_project_directory
 skeleton_reference_file_name = f"{qtm.settings.directory.get_project_directory()}MocapMimicSkeletonReference.json"
 skeleton_reference_bones_file_name = f"{qtm.settings.directory.get_project_directory()}MocapMimicSkeletonBoneReference.json"
 
-def saveSelectedRigidBodyAsReference():
+def saveSelectedRigidBodyAsReference() -> None:
 	rigid_body_trajectory_ids = getSelectedRigidBodyTrajectoryIDs()
 	selected_range = qtm.gui.timeline.get_selected_range()
 	rigid_body_trajectories = {}
@@ -263,7 +259,7 @@ def saveSelectedRigidBodyAsReference():
 		json.dump(rigid_body_trajectories, file)
 		
 # TODO Have this also save the skeleton bone data to a seperate file
-def saveSelectedSkeletonAsReference():
+def saveSelectedSkeletonAsReference() -> None:
 	skeleton_trajectory_ids = getSelectedSkeletonTrajectoryIDs()
 	selected_range = qtm.gui.timeline.get_selected_range()
 	skeleton_trajectories = {}
@@ -283,17 +279,17 @@ def saveSelectedSkeletonAsReference():
 	with open(skeleton_reference_bones_file_name, "w") as file:
 		json.dump(Skeleton, file)
 
-def getSkeletonBonesReferenceFromFile():
+def getSkeletonBonesReferenceFromFile() -> dict[str]:
 	with open(skeleton_reference_bones_file_name, "r") as file:
 		skeleton = json.load(file)    
 		return skeleton
 
-def getRigidBodyReferenceFromFile():
+def getRigidBodyReferenceFromFile() -> dict[int: list[list[list[float]]]]:
 	with open(rigid_body_reference_file_name, "r") as file:
 		rigid_body_trajectories = json.load(file)    
 		return rigid_body_trajectories
 
-def getSkeletonReferenceFromFile():
+def getSkeletonReferenceFromFile() -> dict[int: list[list[list[float]]]]:
 	with open(skeleton_reference_file_name, "r") as file:
 		skeleton_trajectories = json.load(file)    
 		return skeleton_trajectories
@@ -306,7 +302,7 @@ def getSkeletonReferenceFromFile():
 # [BEGIN] COMPARING TRAJECTORIES
 # ----------------------------------------
 
-def compareTrajectories(base_trajectories, mimic_trajectories):
+def compareTrajectories(base_trajectories, mimic_trajectories) -> float:
 	sumCorr = 0
 	
 	if len(base_trajectories) != len(mimic_trajectories):
@@ -353,7 +349,7 @@ def compareTrajectories(base_trajectories, mimic_trajectories):
 
 	return accuracy
 
-def compareSelectedRigidBodyAgainstReference():
+def compareSelectedRigidBodyAgainstReference() -> None:
 	selected_trajectories = getTrajectoriesFormatted(getSelectedRigidBodyTrajectoryIDs())
 	reference_trajectories = getRigidBodyReferenceFromFile()
 
@@ -366,7 +362,7 @@ def compareSelectedRigidBodyAgainstReference():
 	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
-def compareSelectedSkeletonAgainstReference():
+def compareSelectedSkeletonAgainstReference() -> None:
 	selected_trajectories = getTrajectoriesFormatted(getSelectedSkeletonTrajectoryIDs())
 	reference_trajectories = getSkeletonReferenceFromFile()
 
@@ -379,7 +375,7 @@ def compareSelectedSkeletonAgainstReference():
 	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
-def compareSelectedSkeletonBonesAgainstReference():
+def compareSelectedSkeletonBonesAgainstReference() -> None:
 	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID())
 	referenceSkeleton = getSkeletonBonesReferenceFromFile()
 
