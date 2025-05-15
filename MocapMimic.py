@@ -381,7 +381,7 @@ def compareSelectedSkeletonBonesAgainstReference() -> None:
 	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID(), selected_range)
 	referenceSkeleton = getSkeletonBonesReferenceFromFile()
 
-	if len(referenceSkeleton["Transforms"]) > (selected_range["End"] - selected_range["Start"]):
+	if len(referenceSkeleton["Transforms"]) > (selected_range["end"] - selected_range["start"]):
 		print("Mimic must be at least as long as the reference!")
 		return
 
