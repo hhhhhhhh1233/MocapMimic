@@ -425,6 +425,8 @@ def drawSkeletonSpheresRecursive(BoneDict, Index = 0, Transform = [[1,0,0,0], [0
 	for Child in BoneDict["Children"]:
 		drawSkeletonSpheresRecursive(Child, Index, multiplyMatrices(BoneDict["Transforms"][Index], Transform))
 
+	Transform = multiplyMatrices(BoneDict["Transforms"][Index], Transform)
+
 	x = Transform[0][3]
 	y = Transform[1][3]
 	z = Transform[2][3]
