@@ -380,7 +380,7 @@ def compareSelectedSkeletonAgainstReference():
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
 def compareSelectedSkeletonBonesAgainstReference():
-	return
+	print(f"Accuracy of bones: {compareSkeleton()}")
 
 # ----------------------------------------
 # [END] COMPARING TRAJECTORIES
