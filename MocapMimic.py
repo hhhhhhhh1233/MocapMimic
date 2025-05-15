@@ -274,7 +274,7 @@ def saveSelectedSkeletonAsReference() -> None:
 
 	selectedSkeleton = getSelectedSkeletonID()
 
-	Skeleton = getSkeletonAsDict(selectedSkeleton)
+	Skeleton = getSkeletonAsDict(selectedSkeleton, selected_range)
 
 	with open(skeleton_reference_bones_file_name, "w") as file:
 		json.dump(Skeleton, file)
@@ -436,7 +436,7 @@ BoneIDs = []
 # 	]
 # }
 
-def drawSkeletonSpheresRecursive(BoneDict, Index = 0, ParentTransform = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]):
+def drawSkeletonSpheresRecursive(BoneDict: dict[str], Index: int = 0, ParentTransform: list[list[float]] = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]) -> None:
 	Transform = multiplyMatrices(BoneDict["Transforms"][Index], ParentTransform)
 
 	for Child in BoneDict["Children"]:
@@ -486,12 +486,12 @@ def compareSkeletonPose(BoneDict, MimicBoneDict, Index = 0, ParentTransform = [[
 
 	return sumAccuracy + dotProduct(jointDirection, mimicJointDirection), numberOfBones + 1
 
-def getSkeletonAsDict(SkeletonID):
+def getSkeletonAsDict(SkeletonID: int, Range: dict[str: int] = None):
 	RootBoneID = qtm.data.object.skeleton.get_skeleton_root_id(SkeletonID)
 
 	Skeleton = {}
 	RootBoneName = qtm.data.object.skeleton.get_segment_name(RootBoneID)
-	RootBoneTransforms = qtm.data.series.skeleton.get_samples(RootBoneID)
+	RootBoneTransforms = qtm.data.series.skeleton.get_samples(RootBoneID, Range)
 
 	Skeleton.update({"Name": RootBoneName})
 	Skeleton.update({"ID": RootBoneID})
@@ -508,7 +508,7 @@ def getSkeletonAsDict(SkeletonID):
 			Bone = {}
 			Bone.update({"Name": qtm.data.object.skeleton.get_segment_name(Child)})
 			Bone.update({"ID": Child})
-			Bone.update({"Transforms": qtm.data.series.skeleton.get_samples(Child)})
+			Bone.update({"Transforms": qtm.data.series.skeleton.get_samples(Child, Range)})
 			Bone.update({"Children": []})
 
 			CurrentBone["Parent"]["Children"].append(Bone)
