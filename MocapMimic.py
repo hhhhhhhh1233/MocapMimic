@@ -385,15 +385,29 @@ def compareSelectedSkeletonBonesAgainstReference() -> None:
 		print("Mimic must be at least as long as the reference!")
 		return
 
-	sumAccuracy = 0
+	BoneData = {}
 	numbersOfMeasurement = len(referenceSkeleton["Transforms"])
-	for i in range(len(referenceSkeleton["Transforms"])):
-		sumDotProduct, numberOfBones = compareSkeletonPose(referenceSkeleton, mimicSkeleton, i, i)
-		sumAccuracy += sumDotProduct / numberOfBones
+	for i in range(numbersOfMeasurement):
+		TempBoneData = compareSkeletonPose(referenceSkeleton, mimicSkeleton, i, i)
 
-	accuracy = sumAccuracy / numbersOfMeasurement
-	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
-	print(f"Overall accuracy: {accuracy * 100:.2f}%")
+		if i == 0:
+			BoneData = TempBoneData
+			continue
+
+		for key in BoneData:
+			BoneData[key] += TempBoneData[key]
+
+	padding = 0
+	for key in BoneData:
+		padding = max(len(key), padding)
+
+	print("Inaccuracy:")
+	for key, val in BoneData.items():
+		val /= numbersOfMeasurement
+		print(f"{key:{padding}}: {(1 - val) * 100:.2f}%")
+
+	# qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
+	# print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
 # ----------------------------------------
 # [END] COMPARING TRAJECTORIES
@@ -462,13 +476,10 @@ def compareSkeletonPose(BoneDict, MimicBoneDict, Index = 0, MimicIndex = 0, Pare
 	Transform = multiplyMatrices(BoneDict["Transforms"][Index], ParentTransform)
 	MimicTransform = multiplyMatrices(MimicBoneDict["Transforms"][MimicIndex], MimicParentTransform)
 
-	sumAccuracy = 0
-	numberOfBones = 0
+	BoneData = {}
 
 	for i in range(len(BoneDict["Children"])):
-		accuracy, bonesNum = compareSkeletonPose(BoneDict["Children"][i], MimicBoneDict["Children"][i], Index, MimicIndex, Transform, MimicTransform)
-		sumAccuracy += accuracy
-		numberOfBones += bonesNum
+		BoneData.update(compareSkeletonPose(BoneDict["Children"][i], MimicBoneDict["Children"][i], Index, MimicIndex, Transform, MimicTransform))
 
 	x = Transform[0][3]
 	y = Transform[1][3]
@@ -493,8 +504,10 @@ def compareSkeletonPose(BoneDict, MimicBoneDict, Index = 0, MimicIndex = 0, Pare
 	mimicCurrentPosition = [mx, my, mz]
 	mimicParentPosition = [mPx, mPy, mPz]
 	mimicJointDirection = getNormalized(getDifference(mimicCurrentPosition, mimicParentPosition))
+	# print(BoneData)
+	BoneData.update({BoneDict["Name"]: dotProduct(jointDirection, mimicJointDirection)})
 
-	return sumAccuracy + dotProduct(jointDirection, mimicJointDirection), numberOfBones + 1
+	return BoneData
 
 def getSkeletonAsDict(SkeletonID: int, Range: dict[str: int] = None):
 	RootBoneID = qtm.data.object.skeleton.get_skeleton_root_id(SkeletonID)
