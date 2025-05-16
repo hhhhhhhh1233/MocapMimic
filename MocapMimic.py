@@ -401,10 +401,13 @@ def compareSelectedSkeletonBonesAgainstReference() -> None:
 	for key in BoneData:
 		padding = max(len(key), padding)
 
-	print("Inaccuracy:")
+	# Sorts the dict by the accuracy of the joint, least accurate first
+	BoneData = {k: v for k, v in sorted(BoneData.items(), key=lambda item: item[1])}
+
+	print("Bone accuracy (Sorted):")
 	for key, val in BoneData.items():
 		val /= numbersOfMeasurement
-		print(f"{key:{padding + 1}}: {(1 - val) * 100:.2f}%")
+		print(f"{key:{padding + 1}}: {(val) * 100:.2f}%")
 
 	# qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	# print(f"Overall accuracy: {accuracy * 100:.2f}%")
@@ -435,7 +438,10 @@ def compareSelectedSkeletonBonesAgainstReferenceWorldAgnostic() -> None:
 	for key in BoneData:
 		padding = max(len(key), padding)
 
-	print("Bone accuracy:")
+	# Sorts the dict by the accuracy of the joint, least accurate first
+	BoneData = {k: v for k, v in sorted(BoneData.items(), key=lambda item: item[1])}
+
+	print("Bone accuracy (Sorted):")
 	for key, val in BoneData.items():
 		val /= numbersOfMeasurement
 		print(f"{key:{padding + 1}}: {(val) * 100:.2f}%")
