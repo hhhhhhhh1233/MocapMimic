@@ -453,47 +453,6 @@ def compareSelectedSkeletonBonesAgainstReferenceWorldAgnostic() -> None:
 
 BoneIDs = []
 
-# EXAMPLES STRUCTURE
-# Skeleton = {
-# 	"Name": "Hips", 
-# 	"Transforms": [ [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]], 
-# 					[[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]],
-# 					[[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]],
-# 					[[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]], 
-# 	"Children": [
-# 		{
-# 			"Name": "Spine", 
-# 			"Transforms": [ [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]], 
-# 							[[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]],
-# 							[[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]],
-# 							[[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]], 
-# 			"Children": [
-
-# 			]
-# 		},
-# 		{
-# 			"Name": "RightUpLeg", 
-# 			"Transforms": [ [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]], 
-# 							[[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]],
-# 							[[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]],
-# 							[[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]], 
-# 			"Children": [
-
-# 			]
-# 		},
-# 		{
-# 			"Name": "LeftUpLeg", 
-# 			"Transforms": [ [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]], 
-# 							[[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]],
-# 							[[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]],
-# 							[[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]], 
-# 			"Children": [
-
-# 			]
-# 		},
-# 	]
-# }
-
 def drawSkeletonSpheresRecursive(BoneDict: dict[str], Index: int = 0, ParentTransform: list[list[float]] = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]) -> None:
 	Transform = multiplyMatrices(BoneDict["Transforms"][Index], ParentTransform)
 
@@ -625,61 +584,6 @@ def getSkeletonAsDict(SkeletonID: int, Range: dict[str: int] = None):
 			ToConsider.append({"Parent": Bone, "Children": qtm.data.object.skeleton.get_segment_child_ids(Child)})
 	
 	return Skeleton
-
-def getAllParentTransformsAtIndex(BoneID, Index):
-	# Get all of the parent transforms and apply them to the child
-	transforms = []
-	parent_id = qtm.data.object.skeleton.get_segment_parent_id(BoneID)
-	if parent_id != None:
-		parent_transform = qtm.data.series.skeleton.get_sample(parent_id, Index)
-		transforms.append(parent_transform)
-
-	while parent_id != None:
-		parent_id = qtm.data.object.skeleton.get_segment_parent_id(parent_id)
-		if parent_id != None:
-			parent_transform = qtm.data.series.skeleton.get_sample(parent_id, Index)
-			transforms.append(parent_transform)
-			
-	return transforms
-
-def getAllParentTransformsAtTime(BoneID, MeasurementTime):
-	# Get all of the parent transforms and apply them to the child
-	transforms = []
-	parent_id = qtm.data.object.skeleton.get_segment_parent_id(BoneID)
-	if parent_id != None:
-		curr_index = qtm.data.series.skeleton.get_sample_index_at_time(parent_id, MeasurementTime)
-		parent_transform = qtm.data.series.skeleton.get_sample(parent_id, curr_index)
-		transforms.append(parent_transform)
-
-	while parent_id != None:
-		parent_id = qtm.data.object.skeleton.get_segment_parent_id(parent_id)
-		if parent_id != None:
-			curr_index = qtm.data.series.skeleton.get_sample_index_at_time(parent_id, MeasurementTime)
-			parent_transform = qtm.data.series.skeleton.get_sample(parent_id, curr_index)
-			transforms.append(parent_transform)
-			
-	return transforms
-
-def getBoneTransformAtTime(BoneID, MeasurementTime):
-	curr_index = qtm.data.series.skeleton.get_sample_index_at_time(BoneID, MeasurementTime)
-	curr_bone_transform = qtm.data.series.skeleton.get_sample(BoneID, curr_index)
-	transforms = getAllParentTransformsAtTime(BoneID, MeasurementTime)
-	
-	result_transform = copy.deepcopy(curr_bone_transform)
-	for transform in transforms:
-		result_transform = multiplyMatrices(result_transform, transform)
-	
-	return result_transform
-
-def getBoneTransformAtIndex(BoneID, Index):
-	curr_bone_transform = qtm.data.series.skeleton.get_sample(BoneID, Index)
-	transforms = getAllParentTransformsAtIndex(BoneID, Index)
-	
-	result_transform = copy.deepcopy(curr_bone_transform)
-	for transform in transforms:
-		result_transform = multiplyMatrices(result_transform, transform)
-	
-	return result_transform
 
 CurrentSkeleton = {}
 
