@@ -404,7 +404,41 @@ def compareSelectedSkeletonBonesAgainstReference() -> None:
 	print("Inaccuracy:")
 	for key, val in BoneData.items():
 		val /= numbersOfMeasurement
-		print(f"{key:{padding}}: {(1 - val) * 100:.2f}%")
+		print(f"{key:{padding + 1}}: {(1 - val) * 100:.2f}%")
+
+	# qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
+	# print(f"Overall accuracy: {accuracy * 100:.2f}%")
+
+def compareSelectedSkeletonBonesAgainstReferenceWorldAgnostic() -> None:
+	selected_range = qtm.gui.timeline.get_selected_range()
+	print(f"Selected Range: {selected_range}")
+	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID(), selected_range)
+	referenceSkeleton = getSkeletonBonesReferenceFromFile()
+
+	if len(referenceSkeleton["Transforms"]) > (selected_range["end"] - selected_range["start"]):
+		print("Mimic must be at least as long as the reference!")
+		return
+
+	BoneData = {}
+	numbersOfMeasurement = len(referenceSkeleton["Transforms"])
+	for i in range(numbersOfMeasurement):
+		TempBoneData = compareSkeletonPoseWorldAgnostic(referenceSkeleton, mimicSkeleton, i, i)
+
+		if i == 0:
+			BoneData = TempBoneData
+			continue
+
+		for key in BoneData:
+			BoneData[key] += TempBoneData[key]
+
+	padding = 0
+	for key in BoneData:
+		padding = max(len(key), padding)
+
+	print("Bone accuracy:")
+	for key, val in BoneData.items():
+		val /= numbersOfMeasurement
+		print(f"{key:{padding + 1}}: {(val) * 100:.2f}%")
 
 	# qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	# print(f"Overall accuracy: {accuracy * 100:.2f}%")
@@ -506,6 +540,58 @@ def compareSkeletonPose(BoneDict, MimicBoneDict, Index = 0, MimicIndex = 0, Pare
 	mimicJointDirection = getNormalized(getDifference(mimicCurrentPosition, mimicParentPosition))
 	# print(BoneData)
 	BoneData.update({BoneDict["Name"]: dotProduct(jointDirection, mimicJointDirection)})
+
+	return BoneData
+
+# Principly does it make sense? Yes since we only care about the local relationship, it doesn't really matter what happens further up or down the chain.
+# I only care about the direct parent and child relationship between every point, not the chains influence.
+# NOTE The skeletons have to have the same structure, otherwise this will fail
+def compareSkeletonPoseWorldAgnostic(BoneDict, MimicBoneDict, Index = 0, MimicIndex = 0):
+	BoneData = {}
+	ToConsider = [BoneDict]
+	MimicToConsider = [MimicBoneDict]
+
+	while len(ToConsider) > 0:
+		CurrentBone = ToConsider.pop(0)
+		MimicCurrentBone = MimicToConsider.pop(0)
+		for i in range(len(CurrentBone["Children"])):
+			ToConsider.append(CurrentBone["Children"][i])
+			MimicToConsider.append(MimicCurrentBone["Children"][i])
+
+			CurrentTransform = CurrentBone["Transforms"][Index]
+			ChildTransform = CurrentBone["Children"][i]["Transforms"][Index]
+			ChildTransform = multiplyMatrices(ChildTransform, CurrentTransform)
+
+			x = CurrentTransform[0][3]
+			y = CurrentTransform[1][3]
+			z = CurrentTransform[2][3]
+
+			Cx = ChildTransform[0][3]
+			Cy = ChildTransform[1][3]
+			Cz = ChildTransform[2][3]
+
+			MimicCurrentTransform = MimicCurrentBone["Transforms"][MimicIndex]
+			MimicChildTransform = MimicCurrentBone["Children"][i]["Transforms"][MimicIndex]
+			MimicChildTransform = multiplyMatrices(MimicChildTransform, MimicCurrentTransform)
+
+			mx = MimicCurrentTransform[0][3]
+			my = MimicCurrentTransform[1][3]
+			mz = MimicCurrentTransform[2][3]
+
+			mCx = MimicChildTransform[0][3]
+			mCy = MimicChildTransform[1][3]
+			mCz = MimicChildTransform[2][3]
+
+			CurrentPosition = [x, y, z]
+			ChildPosition = [Cx, Cy, Cz]
+			jointDirection = getNormalized(getDifference(ChildPosition, CurrentPosition))
+
+			mimicCurrentPosition = [mx, my, mz]
+			mimicChildPosition = [mCx, mCy, mCz]
+			mimicJointDirection = getNormalized(getDifference(mimicChildPosition, mimicCurrentPosition))
+
+			dot = dotProduct(jointDirection, mimicJointDirection)
+			BoneData.update({CurrentBone["Children"][i]["Name"]: dot})
 
 	return BoneData
 
@@ -753,6 +839,12 @@ skeleton_compare_selected_to_reference_using_bones = "mocap_mimic_skeleton_compa
 qtm.gui.add_command(skeleton_compare_selected_to_reference_using_bones)
 qtm.gui.set_command_execute_function(skeleton_compare_selected_to_reference_using_bones, compareSelectedSkeletonBonesAgainstReference)
 qtm.gui.insert_menu_button(skeleton_submenu_handle, "Compare to Reference (Bones)", skeleton_compare_selected_to_reference_using_bones)
+
+# Setting up the compare function
+skeleton_compare_selected_to_reference_using_bones_world_agnostic = "mocap_mimic_skeleton_compare_selected_bones_to_reference_world_agnostic"
+qtm.gui.add_command(skeleton_compare_selected_to_reference_using_bones_world_agnostic)
+qtm.gui.set_command_execute_function(skeleton_compare_selected_to_reference_using_bones_world_agnostic, compareSelectedSkeletonBonesAgainstReferenceWorldAgnostic)
+qtm.gui.insert_menu_button(skeleton_submenu_handle, "Compare to Reference (Bones) (World Agnostic)", skeleton_compare_selected_to_reference_using_bones_world_agnostic)
 
 # Setting up the draw at skeleton function
 draw_sphere_at_skeleton = "mocap_mimic_draw_sphere_at_skeleton"
