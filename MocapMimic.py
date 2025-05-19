@@ -9,6 +9,9 @@ import copy
 # [BEGIN] UTILS
 # ----------------------------------------
 
+def getTranslation(transform_matrix: list[list[float]]):
+	return [transform_matrix[0][3], transform_matrix[1][3], transform_matrix[2][3]]
+
 # strings = ["QA_hips", "QA_wrist", "QA_elbow"]
 def getPrefix(strings: list[str]) -> str:
 	common = 99999999
@@ -375,20 +378,71 @@ def compareSelectedSkeletonAgainstReference() -> None:
 	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
+bDoCoarsePass = False
+WindowPassResolution: int = 2
+
+# NOTE To be called in the QTM console
+def setCoarsePassEnabled(NewValue: bool):
+	global bDoCoarsePass
+	bDoCoarsePass = NewValue
+
+def setWindowPassResolution(NewIndex: int):
+	global WindowPassResolution
+	WindowPassResolution = NewIndex
+
 def compareSelectedSkeletonBonesAgainstReference() -> None:
+	global bDoCoarsePass
+	global WindowPassResolution
+
 	selected_range = qtm.gui.timeline.get_selected_range()
 	print(f"Selected Range: {selected_range}")
 	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID(), selected_range)
 	referenceSkeleton = getSkeletonBonesReferenceFromFile()
+	
+	Overshoot: int = len(mimicSkeleton["Transforms"]) - len(referenceSkeleton["Transforms"])
 
-	if len(referenceSkeleton["Transforms"]) > (selected_range["end"] - selected_range["start"]):
-		print("Mimic must be at least as long as the reference!")
+	if Overshoot < 0:
+		print(f"Mimic must be at least as long as the reference! Need {-Overshoot} more samples")
 		return
 
 	BoneData = {}
 	numbersOfMeasurement = len(referenceSkeleton["Transforms"])
+	BestAverageScore = 0
+	BestStartIndex = 0
+
+	print(f"Coarse Pass: {bDoCoarsePass}")
+
+	# Start of Coarse Pass
+	if bDoCoarsePass:
+		print(f"Resolution: {WindowPassResolution}")
+		for j in range(Overshoot):
+			for i in range(0, numbersOfMeasurement, WindowPassResolution):
+				TempBoneData = compareSkeletonPose(referenceSkeleton, mimicSkeleton, i, j)
+
+				if i == 0:
+					BoneData = TempBoneData
+					continue
+
+				for key in BoneData:
+					BoneData[key] += TempBoneData[key]
+			
+			AverageScore = sum(BoneData.values()) / len(BoneData)
+
+			if AverageScore > BestAverageScore:
+				BestAverageScore = AverageScore
+				BestStartIndex = j
+
+		# Set the measured range in QTM to the best chunk we found
+		NewRangeStart = selected_range["start"] + BestStartIndex
+		NewRangeEnd = NewRangeStart + numbersOfMeasurement
+		NewRange = {"start": NewRangeStart, "end": NewRangeEnd}
+
+		print(f"Setting range to: {NewRange}")
+		qtm.gui.timeline.set_selected_range(NewRange)
+	# End of Coarse Pass
+	
 	for i in range(numbersOfMeasurement):
-		TempBoneData = compareSkeletonPose(referenceSkeleton, mimicSkeleton, i, i)
+		TempBoneData = compareSkeletonPose(referenceSkeleton, mimicSkeleton, i, i + BestStartIndex)
 
 		if i == 0:
 			BoneData = TempBoneData
@@ -465,10 +519,9 @@ def drawSkeletonSpheresRecursive(BoneDict: dict[str], Index: int = 0, ParentTran
 	for Child in BoneDict["Children"]:
 		drawSkeletonSpheresRecursive(Child, Index, Transform)
 
-	x = Transform[0][3]
-	y = Transform[1][3]
-	z = Transform[2][3]
-	qtm.gui._3d.draw_sphere([x, y, z], 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
+	position = getTranslation(Transform)
+	color = qtm.utilities.color.rgb(0.2, 0.661, 0.11)
+	qtm.gui._3d.draw_sphere(position, 100, color)
 
 # NOTE The skeletons have to have the same structure, otherwise this will fail
 def compareSkeletonPose(BoneDict, MimicBoneDict, Index = 0, MimicIndex = 0, ParentTransform = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]], MimicParentTransform = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]):
@@ -480,28 +533,12 @@ def compareSkeletonPose(BoneDict, MimicBoneDict, Index = 0, MimicIndex = 0, Pare
 	for i in range(len(BoneDict["Children"])):
 		BoneData.update(compareSkeletonPose(BoneDict["Children"][i], MimicBoneDict["Children"][i], Index, MimicIndex, Transform, MimicTransform))
 
-	x = Transform[0][3]
-	y = Transform[1][3]
-	z = Transform[2][3]
-
-	Px = ParentTransform[0][3]
-	Py = ParentTransform[1][3]
-	Pz = ParentTransform[2][3]
-
-	mx = MimicTransform[0][3]
-	my = MimicTransform[1][3]
-	mz = MimicTransform[2][3]
-
-	mPx = MimicParentTransform[0][3]
-	mPy = MimicParentTransform[1][3]
-	mPz = MimicParentTransform[2][3]
-
-	currentPosition = [x, y, z]
-	parentPosition = [Px, Py, Pz]
+	currentPosition = getTranslation(Transform)
+	parentPosition = getTranslation(ParentTransform)
 	jointDirection = getNormalized(getDifference(currentPosition, parentPosition))
 
-	mimicCurrentPosition = [mx, my, mz]
-	mimicParentPosition = [mPx, mPy, mPz]
+	mimicCurrentPosition = getTranslation(MimicTransform)
+	mimicParentPosition = getTranslation(MimicParentTransform)
 	mimicJointDirection = getNormalized(getDifference(mimicCurrentPosition, mimicParentPosition))
 	# print(BoneData)
 	BoneData.update({BoneDict["Name"]: dotProduct(jointDirection, mimicJointDirection)})
@@ -523,38 +560,26 @@ def compareSkeletonPoseWorldAgnostic(BoneDict, MimicBoneDict, Index = 0, MimicIn
 			ToConsider.append(CurrentBone["Children"][i])
 			MimicToConsider.append(MimicCurrentBone["Children"][i])
 
+			# Gather transforms
 			CurrentTransform = CurrentBone["Transforms"][Index]
 			ChildTransform = CurrentBone["Children"][i]["Transforms"][Index]
 			ChildTransform = multiplyMatrices(ChildTransform, CurrentTransform)
-
-			x = CurrentTransform[0][3]
-			y = CurrentTransform[1][3]
-			z = CurrentTransform[2][3]
-
-			Cx = ChildTransform[0][3]
-			Cy = ChildTransform[1][3]
-			Cz = ChildTransform[2][3]
 
 			MimicCurrentTransform = MimicCurrentBone["Transforms"][MimicIndex]
 			MimicChildTransform = MimicCurrentBone["Children"][i]["Transforms"][MimicIndex]
 			MimicChildTransform = multiplyMatrices(MimicChildTransform, MimicCurrentTransform)
 
-			mx = MimicCurrentTransform[0][3]
-			my = MimicCurrentTransform[1][3]
-			mz = MimicCurrentTransform[2][3]
-
-			mCx = MimicChildTransform[0][3]
-			mCy = MimicChildTransform[1][3]
-			mCz = MimicChildTransform[2][3]
-
-			CurrentPosition = [x, y, z]
-			ChildPosition = [Cx, Cy, Cz]
+			# Calculate the joint direction vector
+			CurrentPosition = getTranslation(CurrentTransform)
+			ChildPosition = getTranslation(ChildTransform)
 			jointDirection = getNormalized(getDifference(ChildPosition, CurrentPosition))
 
-			mimicCurrentPosition = [mx, my, mz]
-			mimicChildPosition = [mCx, mCy, mCz]
+			# Calculate the mimic's joint direction vector
+			mimicCurrentPosition = getTranslation(MimicCurrentTransform)
+			mimicChildPosition = getTranslation(MimicChildTransform)
 			mimicJointDirection = getNormalized(getDifference(mimicChildPosition, mimicCurrentPosition))
 
+			# Calculate the dot product between the reference and the mimic
 			dot = dotProduct(jointDirection, mimicJointDirection)
 			BoneData.update({CurrentBone["Children"][i]["Name"]: dot})
 
@@ -603,6 +628,7 @@ def drawSphere(measurement_time):
 	# bone_data.update({"ID": 0})
 
 	# NOTE This is just a hacky test, this paragraph can be removed without harm
+	# It is notable that this hacky method is significantly faster, since it uses fewer matrix multiplications
 	curr_index = qtm.data.series.skeleton.get_sample_index_at_time(BoneIDs[0], measurement_time)
 	drawSkeletonSpheresRecursive(CurrentSkeleton, curr_index)
 	return
@@ -634,10 +660,8 @@ def drawSphere(measurement_time):
 		for transform in transforms:
 			result_transform = multiplyMatrices(result_transform, transform)
         
-		x = result_transform[0][3]
-		y = result_transform[1][3]
-		z = result_transform[2][3]
-		qtm.gui._3d.draw_sphere([x, y, z], 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
+		position = getTranslation(result_transform)
+		qtm.gui._3d.draw_sphere(position, 100, qtm.utilities.color.rgb(0.2, 0.661, 0.11))
 
 bDrawingEnabled = False
 def drawSphereAtSkeletonRoot():
