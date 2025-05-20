@@ -362,8 +362,8 @@ def compareSelectedRigidBodyAgainstReference() -> None:
 
 	accuracy = compareTrajectories(reference_trajectories, selected_trajectories)
 
-	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
-	print(f"Overall accuracy: {accuracy * 100:.2f}%")
+	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy:.2f}", "", "info")
+	print(f"Overall accuracy: {accuracy:.2f}")
 
 def compareSelectedSkeletonAgainstReference() -> None:
 	selected_trajectories = getTrajectoriesFormatted(getSelectedSkeletonTrajectoryIDs())
@@ -375,8 +375,8 @@ def compareSelectedSkeletonAgainstReference() -> None:
 
 	accuracy = compareTrajectories(reference_trajectories, selected_trajectories)
 	
-	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
-	print(f"Overall accuracy: {accuracy * 100:.2f}%")
+	qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy:.2f}", "", "info")
+	print(f"Overall accuracy: {accuracy:.2f}")
 
 bDoCoarsePass = False
 WindowPassResolution: int = 2
@@ -461,7 +461,7 @@ def compareSelectedSkeletonBonesAgainstReference() -> None:
 	print("Bone accuracy (Sorted):")
 	for key, val in BoneData.items():
 		val /= numbersOfMeasurement
-		print(f"{key:{padding + 1}}: {(val) * 100:.2f}%")
+		print(f"{key:{padding + 1}}: {val:.2f}")
 
 	# qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	# print(f"Overall accuracy: {accuracy * 100:.2f}%")
@@ -498,7 +498,7 @@ def compareSelectedSkeletonBonesAgainstReferenceWorldAgnostic() -> None:
 	print("Bone accuracy (Sorted):")
 	for key, val in BoneData.items():
 		val /= numbersOfMeasurement
-		print(f"{key:{padding + 1}}: {(val) * 100:.2f}%")
+		print(f"{key:{padding + 1}}: {val:.2f}")
 
 	# qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	# print(f"Overall accuracy: {accuracy * 100:.2f}%")
