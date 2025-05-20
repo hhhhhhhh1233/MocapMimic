@@ -467,19 +467,58 @@ def compareSelectedSkeletonBonesAgainstReference() -> None:
 	# print(f"Overall accuracy: {accuracy * 100:.2f}%")
 
 def compareSelectedSkeletonBonesAgainstReferenceWorldAgnostic() -> None:
+	global bDoCoarsePass
+	global WindowPassResolution
+
 	selected_range = qtm.gui.timeline.get_selected_range()
 	print(f"Selected Range: {selected_range}")
 	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID(), selected_range)
 	referenceSkeleton = getSkeletonBonesReferenceFromFile()
+	
+	Overshoot: int = len(mimicSkeleton["Transforms"]) - len(referenceSkeleton["Transforms"])
 
-	if len(referenceSkeleton["Transforms"]) > (selected_range["end"] - selected_range["start"]):
-		print("Mimic must be at least as long as the reference!")
+	if Overshoot < 0:
+		print(f"Mimic must be at least as long as the reference! Need {-Overshoot} more samples")
 		return
 
 	BoneData = {}
 	numbersOfMeasurement = len(referenceSkeleton["Transforms"])
+	BestAverageScore = 0
+	BestStartIndex = 0
+
+	print(f"Coarse Pass: {bDoCoarsePass}")
+
+	# Start of Coarse Pass
+	if bDoCoarsePass:
+		print(f"Resolution: {WindowPassResolution}")
+		for j in range(Overshoot):
+			for i in range(0, numbersOfMeasurement, WindowPassResolution):
+				TempBoneData = compareSkeletonPoseWorldAgnostic(referenceSkeleton, mimicSkeleton, i, j)
+
+				if i == 0:
+					BoneData = TempBoneData
+					continue
+
+				for key in BoneData:
+					BoneData[key] += TempBoneData[key]
+			
+			AverageScore = sum(BoneData.values()) / len(BoneData)
+
+			if AverageScore > BestAverageScore:
+				BestAverageScore = AverageScore
+				BestStartIndex = j
+
+		# Set the measured range in QTM to the best chunk we found
+		NewRangeStart = selected_range["start"] + BestStartIndex
+		NewRangeEnd = NewRangeStart + numbersOfMeasurement
+		NewRange = {"start": NewRangeStart, "end": NewRangeEnd}
+
+		print(f"Setting range to: {NewRange}")
+		qtm.gui.timeline.set_selected_range(NewRange)
+	# End of Coarse Pass
+	
 	for i in range(numbersOfMeasurement):
-		TempBoneData = compareSkeletonPoseWorldAgnostic(referenceSkeleton, mimicSkeleton, i, i)
+		TempBoneData = compareSkeletonPoseWorldAgnostic(referenceSkeleton, mimicSkeleton, i, i + BestStartIndex)
 
 		if i == 0:
 			BoneData = TempBoneData
