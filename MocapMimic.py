@@ -248,9 +248,50 @@ rigid_body_reference_file_name = f"{qtm.settings.directory.get_project_directory
 skeleton_reference_file_name = f"{qtm.settings.directory.get_project_directory()}MocapMimicSkeletonReference.json"
 skeleton_reference_bones_file_name = f"{qtm.settings.directory.get_project_directory()}MocapMimicSkeletonBoneReference.json"
 
+gSegments = []
+def addSegmentMarker() -> None:
+	global gSegments
+	current_frame = qtm.gui.timeline.get_current_frame()
+	gSegments.append(current_frame)
+	# NOTE I'm not really sure this math below is right, it's kind of a fencepost problem
+	# I'm too lazy to properly solve it though so this will do
+	print(f"Segment added, current segments: {len(gSegments + 1)}")
+
+def clearSegmentMarkers() -> None:
+	global gSegments
+	gSegments.clear()
+	print("Segments cleared!")
+
+def getSegmentsAsRanges(segments: list[int]) -> dict[str]:
+	segment_ranges = []
+
+	for i in range(len(segments) - 1):
+		segment_ranges.append({"start": segments[i], "end": segments[i + 1]})
+	
+	return segment_ranges
+
+def getSegmentsInLocalRange(range):
+	global gSegments
+
+	local_segments = [segment - range["start"] for segment in gSegments]
+
+	# NOTE Adds in the start and the end so that the segments can cover that if the user hasn't already
+	# But it doesn't add anything if the user didn't add anything either
+	if len(gSegments) > 0:
+		if local_segments[0] != 0:
+			local_segments.insert(0, 0)
+
+		if local_segments[-1] != range["end"] - range["start"]:
+			local_segments.append(range["end"] - range["start"])
+	
+	return local_segments
+
 def saveSelectedRigidBodyAsReference() -> None:
+	global gSegments
+
 	rigid_body_trajectory_ids = getSelectedRigidBodyTrajectoryIDs()
 	selected_range = qtm.gui.timeline.get_selected_range()
+	rigid_body_data = {}
 	rigid_body_trajectories = {}
 	
 	for trajectory_id in rigid_body_trajectory_ids:
@@ -258,41 +299,60 @@ def saveSelectedRigidBodyAsReference() -> None:
 		trajectory_points = _3d.get_samples(trajectory_id, selected_range)
 		rigid_body_trajectories.update({trajectory_label: trajectory_points})
 	
+	segments = getSegmentsAsRanges(getSegmentsInLocalRange(selected_range))
+
+	rigid_body_data.update({"trajectories": rigid_body_trajectories})
+	rigid_body_data.update({"segments": segments})
+	
 	with open(rigid_body_reference_file_name, "w") as file:
 		json.dump(rigid_body_trajectories, file)
+
+	gSegments.clear()
 		
-# TODO Have this also save the skeleton bone data to a seperate file
 def saveSelectedSkeletonAsReference() -> None:
+	global gSegments
+
 	skeleton_trajectory_ids = getSelectedSkeletonTrajectoryIDs()
 	selected_range = qtm.gui.timeline.get_selected_range()
+	skeleton_trajectories_data = {}
 	skeleton_trajectories = {}
 	
 	for trajectory_id in skeleton_trajectory_ids:
 		trajectory_label = qtm.data.object.trajectory.get_label(trajectory_id)
 		trajectory_points = _3d.get_samples(trajectory_id, selected_range)
 		skeleton_trajectories.update({trajectory_label: trajectory_points})
+
+	segments = getSegmentsAsRanges(getSegmentsInLocalRange(selected_range))
+
+	skeleton_trajectories_data.update({"trajectories": skeleton_trajectories})
+	skeleton_trajectories_data.update({"segments": segments})
 	
 	with open(skeleton_reference_file_name, "w") as file:
-		json.dump(skeleton_trajectories, file)
+		json.dump(skeleton_trajectories_data, file)
 
 	selectedSkeleton = getSelectedSkeletonID()
 
+	SkeletonData = {}
 	Skeleton = getSkeletonAsDict(selectedSkeleton, selected_range)
+	SkeletonData.update({"skeleton": Skeleton})
+	SkeletonData.update({"segments": segments})
 
 	with open(skeleton_reference_bones_file_name, "w") as file:
-		json.dump(Skeleton, file)
+		json.dump(SkeletonData, file)
+
+	gSegments.clear()
 
 def getSkeletonBonesReferenceFromFile() -> dict[str]:
 	with open(skeleton_reference_bones_file_name, "r") as file:
 		skeleton = json.load(file)    
 		return skeleton
 
-def getRigidBodyReferenceFromFile() -> dict[int: list[list[list[float]]]]:
+def getRigidBodyReferenceFromFile() -> dict[str]:
 	with open(rigid_body_reference_file_name, "r") as file:
 		rigid_body_trajectories = json.load(file)    
 		return rigid_body_trajectories
 
-def getSkeletonReferenceFromFile() -> dict[int: list[list[list[float]]]]:
+def getSkeletonReferenceFromFile() -> dict[str]:
 	with open(skeleton_reference_file_name, "r") as file:
 		skeleton_trajectories = json.load(file)    
 		return skeleton_trajectories
@@ -354,7 +414,7 @@ def compareTrajectories(base_trajectories, mimic_trajectories) -> float:
 
 def compareSelectedRigidBodyAgainstReference() -> None:
 	selected_trajectories = getTrajectoriesFormatted(getSelectedRigidBodyTrajectoryIDs())
-	reference_trajectories = getRigidBodyReferenceFromFile()
+	reference_trajectories = getRigidBodyReferenceFromFile()["trajectories"]
 
 	if len(selected_trajectories) == 0 or len(selected_trajectories) == 0:
 		qtm.gui.message.add_message("Mocap Mimic: No rigid bodies selected", "Must select a rigid body to deal with", "error")
@@ -367,7 +427,7 @@ def compareSelectedRigidBodyAgainstReference() -> None:
 
 def compareSelectedSkeletonAgainstReference() -> None:
 	selected_trajectories = getTrajectoriesFormatted(getSelectedSkeletonTrajectoryIDs())
-	reference_trajectories = getSkeletonReferenceFromFile()
+	reference_trajectories = getSkeletonReferenceFromFile()["trajectories"]
 
 	if len(selected_trajectories) == 0 or len(selected_trajectories) == 0:
 		qtm.gui.message.add_message("Mocap Mimic: No skeleton selected", "Must select a skeleton to deal with", "error")
@@ -397,7 +457,9 @@ def compareSelectedSkeletonBonesAgainstReference() -> None:
 	selected_range = qtm.gui.timeline.get_selected_range()
 	print(f"Selected Range: {selected_range}")
 	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID(), selected_range)
-	referenceSkeleton = getSkeletonBonesReferenceFromFile()
+	referenceSkeleton = getSkeletonBonesReferenceFromFile()["skeleton"]
+	segments = getSkeletonBonesReferenceFromFile()["segments"]
+	print(f"segments: {segments}")
 	
 	Overshoot: int = len(mimicSkeleton["Transforms"]) - len(referenceSkeleton["Transforms"])
 
@@ -408,7 +470,7 @@ def compareSelectedSkeletonBonesAgainstReference() -> None:
 	BoneData = {}
 	numbersOfMeasurement = len(referenceSkeleton["Transforms"])
 	BestAverageScore = 0
-	BestStartIndex = 0
+	MimicComparisonOffset = 0
 
 	print(f"Coarse Pass: {bDoCoarsePass}")
 
@@ -430,38 +492,106 @@ def compareSelectedSkeletonBonesAgainstReference() -> None:
 
 			if AverageScore > BestAverageScore:
 				BestAverageScore = AverageScore
-				BestStartIndex = j
+				MimicComparisonOffset = j
 
 		# Set the measured range in QTM to the best chunk we found
-		NewRangeStart = selected_range["start"] + BestStartIndex
+		NewRangeStart = selected_range["start"] + MimicComparisonOffset
 		NewRangeEnd = NewRangeStart + numbersOfMeasurement
 		NewRange = {"start": NewRangeStart, "end": NewRangeEnd}
 
 		print(f"Setting range to: {NewRange}")
 		qtm.gui.timeline.set_selected_range(NewRange)
 	# End of Coarse Pass
-	
-	for i in range(numbersOfMeasurement):
-		TempBoneData = compareSkeletonPose(referenceSkeleton, mimicSkeleton, i, i + BestStartIndex)
 
-		if i == 0:
-			BoneData = TempBoneData
-			continue
+	# NOTE If segments exist, split up the evaluation
+	# TODO Add proper evalution
+	if len(segments) > 0:
+		# Structured like {"Hips": [0.95, 0.584, 0.458], "Spine": [0.95, 0.584, 0.458]}
+		SegmentedBoneData = {}
+		boneNames = getAllSkeletonBoneNames(referenceSkeleton)
+		for boneName in boneNames:
+			SegmentedBoneData.update({boneName: []})
 
+		for segment in segments:
+			print(segment)
+			SegmentComparisonData = {}
+			for i in range(segment["start"], segment["end"]):
+				TempBoneData = compareSkeletonPose(referenceSkeleton, mimicSkeleton, i, i + MimicComparisonOffset)
+
+				if i == segment["start"]:
+					SegmentComparisonData = TempBoneData
+					continue
+
+				for key in SegmentComparisonData:
+					SegmentComparisonData[key] += TempBoneData[key]
+			
+			# Calculate the average score over the period
+			periodSpan = segment["end"] - segment["start"]
+			for key in SegmentComparisonData:
+				SegmentComparisonData[key] /= periodSpan
+
+			for key in SegmentedBoneData:
+				if not (key in SegmentedBoneData):
+					SegmentedBoneData[key].update({key: [SegmentComparisonData[key]]})
+				else:
+					SegmentedBoneData[key].append(SegmentComparisonData[key])
+
+		
+		# Some weird logic to make the output look a bit prettier
+		# TODO setting this to a constant value is bad, but I'm too lazy to actually iterate over the array
+		longestBoneName = 20
+		title = "Joint Name"
+		titleString = f"{title:{longestBoneName}}|"
+		sectionLengths = []
+		for i in range(len(segments)):
+			tempString = f" Segment {i} ({(segments[i]['end'] - segments[i]['start']) * (1/100)}s) |"
+			sectionLengths.append(len(tempString) - 1)
+			titleString += tempString
+		print(titleString)
+        
+		bufferString = ""
+		separatorString = ""
+		for i in range(len(titleString)):
+			if titleString[i] == "|":
+				bufferString += "+"
+				separatorString += "|"
+			else:
+				bufferString += "-"
+				separatorString += " "
+
+		for key, val in SegmentedBoneData.items():
+			tempString = f"{key:20}|"
+			for i, el in enumerate(val):
+				padding = (sectionLengths[i] - 5) // 2
+				string = f"{'':{padding}}{el:0.3f}{'':{padding}}|"
+				tempString += string
+			print(bufferString)
+			print(tempString)
+			print(separatorString)
+
+	# NOTE If no segments exist, judge it in its entirety
+	else:
+		for i in range(numbersOfMeasurement):
+			TempBoneData = compareSkeletonPose(referenceSkeleton, mimicSkeleton, i, i + MimicComparisonOffset)
+
+			if i == 0:
+				BoneData = TempBoneData
+				continue
+
+			for key in BoneData:
+				BoneData[key] += TempBoneData[key]
+
+		padding = 0
 		for key in BoneData:
-			BoneData[key] += TempBoneData[key]
+			padding = max(len(key), padding)
 
-	padding = 0
-	for key in BoneData:
-		padding = max(len(key), padding)
+		# Sorts the dict by the accuracy of the joint, least accurate first
+		BoneData = {k: v for k, v in sorted(BoneData.items(), key=lambda item: item[1])}
 
-	# Sorts the dict by the accuracy of the joint, least accurate first
-	BoneData = {k: v for k, v in sorted(BoneData.items(), key=lambda item: item[1])}
-
-	print("Bone accuracy (Sorted):")
-	for key, val in BoneData.items():
-		val /= numbersOfMeasurement
-		print(f"{key:{padding + 1}}: {val:.2f}")
+		print("Bone accuracy (Sorted):")
+		for key, val in BoneData.items():
+			val /= numbersOfMeasurement
+			print(f"{key:{padding + 1}}: {val:.2f}")
 
 	# qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	# print(f"Overall accuracy: {accuracy * 100:.2f}%")
@@ -473,7 +603,7 @@ def compareSelectedSkeletonBonesAgainstReferenceWorldAgnostic() -> None:
 	selected_range = qtm.gui.timeline.get_selected_range()
 	print(f"Selected Range: {selected_range}")
 	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID(), selected_range)
-	referenceSkeleton = getSkeletonBonesReferenceFromFile()
+	referenceSkeleton = getSkeletonBonesReferenceFromFile()["skeleton"]
 	
 	Overshoot: int = len(mimicSkeleton["Transforms"]) - len(referenceSkeleton["Transforms"])
 
@@ -484,7 +614,7 @@ def compareSelectedSkeletonBonesAgainstReferenceWorldAgnostic() -> None:
 	BoneData = {}
 	numbersOfMeasurement = len(referenceSkeleton["Transforms"])
 	BestAverageScore = 0
-	BestStartIndex = 0
+	MimicComparisonOffset = 0
 
 	print(f"Coarse Pass: {bDoCoarsePass}")
 
@@ -506,10 +636,10 @@ def compareSelectedSkeletonBonesAgainstReferenceWorldAgnostic() -> None:
 
 			if AverageScore > BestAverageScore:
 				BestAverageScore = AverageScore
-				BestStartIndex = j
+				MimicComparisonOffset = j
 
 		# Set the measured range in QTM to the best chunk we found
-		NewRangeStart = selected_range["start"] + BestStartIndex
+		NewRangeStart = selected_range["start"] + MimicComparisonOffset
 		NewRangeEnd = NewRangeStart + numbersOfMeasurement
 		NewRange = {"start": NewRangeStart, "end": NewRangeEnd}
 
@@ -518,7 +648,7 @@ def compareSelectedSkeletonBonesAgainstReferenceWorldAgnostic() -> None:
 	# End of Coarse Pass
 	
 	for i in range(numbersOfMeasurement):
-		TempBoneData = compareSkeletonPoseWorldAgnostic(referenceSkeleton, mimicSkeleton, i, i + BestStartIndex)
+		TempBoneData = compareSkeletonPoseWorldAgnostic(referenceSkeleton, mimicSkeleton, i, i + MimicComparisonOffset)
 
 		if i == 0:
 			BoneData = TempBoneData
@@ -583,6 +713,12 @@ def compareSkeletonPose(BoneDict, MimicBoneDict, Index = 0, MimicIndex = 0, Pare
 	BoneData.update({BoneDict["Name"]: dotProduct(jointDirection, mimicJointDirection)})
 
 	return BoneData
+
+def getAllSkeletonBoneNames(BoneDict) -> list[str]:
+	bones = [BoneDict["Name"]]
+	for child in BoneDict["Children"]:
+		bones += getAllSkeletonBoneNames(child)
+	return bones
 
 # Principly does it make sense? Yes since we only care about the local relationship, it doesn't really matter what happens further up or down the chain.
 # I only care about the direct parent and child relationship between every point, not the chains influence.
@@ -830,6 +966,18 @@ print_selected_name = "mocap_mimic_print_selected"
 qtm.gui.add_command(print_selected_name)
 qtm.gui.set_command_execute_function(print_selected_name, printSelected)
 qtm.gui.insert_menu_button(mocap_mimic_menu_handle, "Print Selections", print_selected_name)
+
+# Setting up the add segment marker function
+add_segment_marker_name = "mocap_mimic_add_segment_marker"
+qtm.gui.add_command(add_segment_marker_name)
+qtm.gui.set_command_execute_function(add_segment_marker_name, addSegmentMarker)
+qtm.gui.insert_menu_button(mocap_mimic_menu_handle, "Add Segment Marker", add_segment_marker_name)
+
+# Setting up the clear segment marker function
+clear_segment_markers_name = "mocap_mimic_clear_segment_markers"
+qtm.gui.add_command(clear_segment_markers_name)
+qtm.gui.set_command_execute_function(clear_segment_markers_name, clearSegmentMarkers)
+qtm.gui.insert_menu_button(mocap_mimic_menu_handle, "Clear Segment Markers", clear_segment_markers_name)
 
 # ----------------------------------------
 # [END] ADDING MENU ITEMS
