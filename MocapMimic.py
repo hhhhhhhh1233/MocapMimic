@@ -262,6 +262,30 @@ def clearSegmentMarkers() -> None:
 	gSegments.clear()
 	print("Segments cleared!")
 
+markerFrequency: float = 0.5
+def setMarkerFrequencyInSeconds(NewValue: float):
+	global markerFrequency
+	markerFrequency = NewValue
+	print(f"Marker Frequency set to once every {markerFrequency} seconds")
+
+# Add in markers of equal distance
+def addEquidistantMarkers():
+	global gSegments
+	global markerFrequency
+
+	# 100.0
+	qtmFrequency = qtm.gui.timeline.get_frequency()
+
+	selected_range = qtm.gui.timeline.get_selected_range()
+
+	# If markerFrequency is 0.5 for half a second, then multiplying that value by qtmFrequency
+	# will get 50 frames, which represents the size of each segment
+	spacing = int(markerFrequency * qtmFrequency)
+
+	for i in range(selected_range["start"], selected_range["end"], spacing):
+		gSegments.append(i)
+	print(f"Added {len(gSegments)} markers!")
+
 def getSegmentsAsRanges(segments: list[int]) -> dict[str]:
 	segment_ranges = []
 
@@ -543,8 +567,9 @@ def compareSelectedSkeletonBonesAgainstReference() -> None:
 		title = "Joint Name"
 		titleString = f"{title:{longestBoneName}}|"
 		sectionLengths = []
+		freq = qtm.gui.timeline.get_frequency()
 		for i in range(len(segments)):
-			tempString = f" Segment {i} ({(segments[i]['end'] - segments[i]['start']) * (1/100)}s) |"
+			tempString = f" Segment {i} ({segments[i]['start'] * (1/freq):.2f}s - {segments[i]['end'] * (1/freq):.2f}s) |"
 			sectionLengths.append(len(tempString) - 1)
 			titleString += tempString
 		print(titleString)
@@ -562,8 +587,9 @@ def compareSelectedSkeletonBonesAgainstReference() -> None:
 		for key, val in SegmentedBoneData.items():
 			tempString = f"{key:20}|"
 			for i, el in enumerate(val):
-				padding = (sectionLengths[i] - 5) // 2
-				string = f"{'':{padding}}{el:0.3f}{'':{padding}}|"
+				lpadding = (sectionLengths[i] - 5) // 2
+				rpadding = math.ceil((sectionLengths[i] - 5) / 2)
+				string = f"{'':{lpadding}}{el:0.3f}{'':{rpadding}}|"
 				tempString += string
 			print(bufferString)
 			print(tempString)
@@ -978,6 +1004,12 @@ clear_segment_markers_name = "mocap_mimic_clear_segment_markers"
 qtm.gui.add_command(clear_segment_markers_name)
 qtm.gui.set_command_execute_function(clear_segment_markers_name, clearSegmentMarkers)
 qtm.gui.insert_menu_button(mocap_mimic_menu_handle, "Clear Segment Markers", clear_segment_markers_name)
+
+# Setting up the clear segment marker function
+add_equidistant_markers_name = "mocap_mimic_add_equidistant_markers"
+qtm.gui.add_command(add_equidistant_markers_name)
+qtm.gui.set_command_execute_function(add_equidistant_markers_name, addEquidistantMarkers)
+qtm.gui.insert_menu_button(mocap_mimic_menu_handle, "Add Equidistant Segment Markers", add_equidistant_markers_name)
 
 # ----------------------------------------
 # [END] ADDING MENU ITEMS
