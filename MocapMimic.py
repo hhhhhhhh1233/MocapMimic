@@ -426,10 +426,6 @@ def compareTrajectories(base_trajectories, mimic_trajectories) -> float:
 				corr = dotProduct(getNormalized(RefDelta), getNormalized(SelDelta))
 			sumCorr += max(0, corr)
 
-			# if corr <= 0:
-			# 	print(f"Reference: {base_trajectories[i][1][i + 1]} and {base_trajectories[i][1][i]}")
-			# 	print(f"Selected: {mimic_trajectories[i][1][i + 1]} and {mimic_trajectories[i][1][i]}")
-
 	numberOfLables = len(base_trajectories)
 	numberOfSamples = len(base_trajectories[list(base_trajectories.keys())[0]])
 	accuracy = sumCorr / (numberOfLables * numberOfSamples)
@@ -473,6 +469,39 @@ def setCoarsePassEnabled(NewValue: bool):
 def setWindowPassResolution(NewIndex: int):
 	global WindowPassResolution
 	WindowPassResolution = NewIndex
+
+def printSegmentedResults(Segments, SegmentedBoneData):
+	longestBoneName = 20
+	title = "Joint Name"
+	titleString = f"{title:{longestBoneName}}|"
+	sectionLengths = []
+	freq = qtm.gui.timeline.get_frequency()
+	for i in range(len(Segments)):
+		tempString = f" Segment {i} ({Segments[i]['start'] * (1/freq):.2f}s - {Segments[i]['end'] * (1/freq):.2f}s) |"
+		sectionLengths.append(len(tempString) - 1)
+		titleString += tempString
+	print(titleString)
+	
+	bufferString = ""
+	separatorString = ""
+	for i in range(len(titleString)):
+		if titleString[i] == "|":
+			bufferString += "+"
+			separatorString += "|"
+		else:
+			bufferString += "-"
+			separatorString += " "
+
+	for key, val in SegmentedBoneData.items():
+		tempString = f"{key:{longestBoneName}}|"
+		for i, el in enumerate(val):
+			lpadding = (sectionLengths[i] - 5) // 2
+			rpadding = math.ceil((sectionLengths[i] - 5) / 2)
+			string = f"{'':{lpadding}}{el:0.3f}{'':{rpadding}}|"
+			tempString += string
+		print(bufferString)
+		print(tempString)
+		print(separatorString)
 
 def compareSelectedSkeletonBonesAgainstReference() -> None:
 	global bDoCoarsePass
@@ -563,37 +592,7 @@ def compareSelectedSkeletonBonesAgainstReference() -> None:
 		
 		# Some weird logic to make the output look a bit prettier
 		# TODO setting this to a constant value is bad, but I'm too lazy to actually iterate over the array
-		longestBoneName = 20
-		title = "Joint Name"
-		titleString = f"{title:{longestBoneName}}|"
-		sectionLengths = []
-		freq = qtm.gui.timeline.get_frequency()
-		for i in range(len(segments)):
-			tempString = f" Segment {i} ({segments[i]['start'] * (1/freq):.2f}s - {segments[i]['end'] * (1/freq):.2f}s) |"
-			sectionLengths.append(len(tempString) - 1)
-			titleString += tempString
-		print(titleString)
-        
-		bufferString = ""
-		separatorString = ""
-		for i in range(len(titleString)):
-			if titleString[i] == "|":
-				bufferString += "+"
-				separatorString += "|"
-			else:
-				bufferString += "-"
-				separatorString += " "
-
-		for key, val in SegmentedBoneData.items():
-			tempString = f"{key:20}|"
-			for i, el in enumerate(val):
-				lpadding = (sectionLengths[i] - 5) // 2
-				rpadding = math.ceil((sectionLengths[i] - 5) / 2)
-				string = f"{'':{lpadding}}{el:0.3f}{'':{rpadding}}|"
-				tempString += string
-			print(bufferString)
-			print(tempString)
-			print(separatorString)
+		printSegmentedResults(segments, SegmentedBoneData)
 
 	# NOTE If no segments exist, judge it in its entirety
 	else:
@@ -630,6 +629,8 @@ def compareSelectedSkeletonBonesAgainstReferenceWorldAgnostic() -> None:
 	print(f"Selected Range: {selected_range}")
 	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID(), selected_range)
 	referenceSkeleton = getSkeletonBonesReferenceFromFile()["skeleton"]
+	segments = getSkeletonBonesReferenceFromFile()["segments"]
+	print(f"segments: {segments}")
 	
 	Overshoot: int = len(mimicSkeleton["Transforms"]) - len(referenceSkeleton["Transforms"])
 
@@ -672,28 +673,66 @@ def compareSelectedSkeletonBonesAgainstReferenceWorldAgnostic() -> None:
 		print(f"Setting range to: {NewRange}")
 		qtm.gui.timeline.set_selected_range(NewRange)
 	# End of Coarse Pass
-	
-	for i in range(numbersOfMeasurement):
-		TempBoneData = compareSkeletonPoseWorldAgnostic(referenceSkeleton, mimicSkeleton, i, i + MimicComparisonOffset)
 
-		if i == 0:
-			BoneData = TempBoneData
-			continue
+	# NOTE If segments exist, split up the evaluation
+	# TODO Add proper evalution
+	if len(segments) > 0:
+		# Structured like {"Hips": [0.95, 0.584, 0.458], "Spine": [0.95, 0.584, 0.458]}
+		SegmentedBoneData = {}
+		boneNames = getAllSkeletonBoneNames(referenceSkeleton)
+		for boneName in boneNames:
+			SegmentedBoneData.update({boneName: []})
 
+		for segment in segments:
+			print(segment)
+			SegmentComparisonData = {}
+			for i in range(segment["start"], segment["end"]):
+				TempBoneData = compareSkeletonPoseWorldAgnostic(referenceSkeleton, mimicSkeleton, i, i + MimicComparisonOffset)
+
+				if i == segment["start"]:
+					SegmentComparisonData = TempBoneData
+					continue
+
+				for key in SegmentComparisonData:
+					SegmentComparisonData[key] += TempBoneData[key]
+			
+			# Calculate the average score over the period
+			periodSpan = segment["end"] - segment["start"]
+			for key in SegmentComparisonData:
+				SegmentComparisonData[key] /= periodSpan
+
+			for key in SegmentedBoneData:
+				if not (key in SegmentedBoneData):
+					SegmentedBoneData[key].update({key: [SegmentComparisonData[key]]})
+				else:
+					SegmentedBoneData[key].append(SegmentComparisonData[key])
+
+		
+		printSegmentedResults(segments, SegmentedBoneData)
+
+	# NOTE If no segments exist, judge it in its entirety
+	else:
+		for i in range(numbersOfMeasurement):
+			TempBoneData = compareSkeletonPoseWorldAgnostic(referenceSkeleton, mimicSkeleton, i, i + MimicComparisonOffset)
+
+			if i == 0:
+				BoneData = TempBoneData
+				continue
+
+			for key in BoneData:
+				BoneData[key] += TempBoneData[key]
+
+		padding = 0
 		for key in BoneData:
-			BoneData[key] += TempBoneData[key]
+			padding = max(len(key), padding)
 
-	padding = 0
-	for key in BoneData:
-		padding = max(len(key), padding)
+		# Sorts the dict by the accuracy of the joint, least accurate first
+		BoneData = {k: v for k, v in sorted(BoneData.items(), key=lambda item: item[1])}
 
-	# Sorts the dict by the accuracy of the joint, least accurate first
-	BoneData = {k: v for k, v in sorted(BoneData.items(), key=lambda item: item[1])}
-
-	print("Bone accuracy (Sorted):")
-	for key, val in BoneData.items():
-		val /= numbersOfMeasurement
-		print(f"{key:{padding + 1}}: {val:.2f}")
+		print("Bone accuracy (Sorted):")
+		for key, val in BoneData.items():
+			val /= numbersOfMeasurement
+			print(f"{key:{padding + 1}}: {val:.2f}")
 
 	# qtm.gui.message.add_message(f"Mocap Mimic: Overall accuracy: {accuracy * 100:.2f}%", "", "info")
 	# print(f"Overall accuracy: {accuracy * 100:.2f}%")
