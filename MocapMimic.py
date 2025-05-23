@@ -97,11 +97,6 @@ def multiplyVectorMatrix(vec: list[float], mat: list[list[float]]) -> list[float
 	
 	return resultVec
 
-	# return vec4(rhs.x * m[0][0] + rhs.y * m[1][0] + rhs.z * m[2][0] + rhs.w * m[3][0] 
-	# 			rhs.x * m[0][1] + rhs.y * m[1][1] + rhs.z * m[2][1] + rhs.w * m[3][1]
-	# 			rhs.x * m[0][2] + rhs.y * m[1][2] + rhs.z * m[2][2] + rhs.w * m[3][2] 
-	# 			rhs.x * m[0][3] + rhs.y * m[1][3] + rhs.z * m[2][3] + rhs.w * m[3][3]
-
 
 # ----------------------------------------
 # [END] MATRICES
@@ -1068,9 +1063,23 @@ qtm.gui.insert_menu_button(mocap_mimic_menu_handle, "Add Equidistant Segment Mar
 # [END] ADDING MENU ITEMS
 # ----------------------------------------
 
-# Print all of the current settings to the user
-print("Mocap Mimic: Current values of user-set variables:")
+def PrintAsBox(strings: list[str]) -> None:
+	maxLength = 0
+	for string in strings:
+		maxLength = max(maxLength, len(string))
+	
+	topString = "+-" + maxLength * "-" + "-+"
+	print(topString)
+	for string in strings:
+		print(f"| {string:{maxLength}} |")
+	print(topString)
 
-print(f"markerFrequency: float = {markerFrequency}, call setMarkerFrequencyInSeconds(NewValue: float) to change this value")
-print(f"bDoCoarsePass: bool = {bDoCoarsePass}, call setCoarsePassEnabled(NewValue: bool) to change this value")
-print(f"WindowPassResolution: int = {WindowPassResolution}, call setWindowPassResolution(NewIndex: int) to change this value")
+# Print all of the current settings to the user
+info = [
+	"Mocap Mimic: Current values of user-set variables:", 
+	f"markerFrequency: float = {markerFrequency}, call setMarkerFrequencyInSeconds(NewValue: float) to change this value", 
+	f"bDoCoarsePass: bool = {bDoCoarsePass}, call setCoarsePassEnabled(NewValue: bool) to change this value", 
+	f"WindowPassResolution: int = {WindowPassResolution}, call setWindowPassResolution(NewIndex: int) to change this value"
+]
+
+PrintAsBox(info)
