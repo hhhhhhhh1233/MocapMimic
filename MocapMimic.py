@@ -465,10 +465,12 @@ WindowPassResolution: int = 2
 def setCoarsePassEnabled(NewValue: bool):
 	global bDoCoarsePass
 	bDoCoarsePass = NewValue
+	print(f"bDoCoarsePass: {NewValue}")
 
 def setWindowPassResolution(NewIndex: int):
 	global WindowPassResolution
 	WindowPassResolution = NewIndex
+	print(f"WindowPassResolution: {NewIndex}")
 
 def printSegmentedResults(Segments, SegmentedBoneData):
 	longestBoneName = 20
@@ -509,7 +511,13 @@ def compareSelectedSkeletonBonesAgainstReference() -> None:
 
 	selected_range = qtm.gui.timeline.get_selected_range()
 	print(f"Selected Range: {selected_range}")
-	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID(), selected_range)
+	selectedSkeletonID = getSelectedSkeletonID()
+
+	if selectedSkeletonID == -1:
+		print("No Skeleton Selected!")
+		return
+
+	mimicSkeleton = getSkeletonAsDict(selectedSkeletonID, selected_range)
 	referenceSkeleton = getSkeletonBonesReferenceFromFile()["skeleton"]
 	segments = getSkeletonBonesReferenceFromFile()["segments"]
 	print(f"segments: {segments}")
@@ -627,7 +635,13 @@ def compareSelectedSkeletonBonesAgainstReferenceWorldAgnostic() -> None:
 
 	selected_range = qtm.gui.timeline.get_selected_range()
 	print(f"Selected Range: {selected_range}")
-	mimicSkeleton = getSkeletonAsDict(getSelectedSkeletonID(), selected_range)
+	selectedSkeletonID = getSelectedSkeletonID()
+
+	if selectedSkeletonID == -1:
+		print("No Skeleton Selected!")
+		return
+
+	mimicSkeleton = getSkeletonAsDict(selectedSkeletonID, selected_range)
 	referenceSkeleton = getSkeletonBonesReferenceFromFile()["skeleton"]
 	segments = getSkeletonBonesReferenceFromFile()["segments"]
 	print(f"segments: {segments}")
@@ -1053,3 +1067,10 @@ qtm.gui.insert_menu_button(mocap_mimic_menu_handle, "Add Equidistant Segment Mar
 # ----------------------------------------
 # [END] ADDING MENU ITEMS
 # ----------------------------------------
+
+# Print all of the current settings to the user
+print("Mocap Mimic: Current values of user-set variables:")
+
+print(f"markerFrequency: float = {markerFrequency}, call setMarkerFrequencyInSeconds(NewValue: float) to change this value")
+print(f"bDoCoarsePass: bool = {bDoCoarsePass}, call setCoarsePassEnabled(NewValue: bool) to change this value")
+print(f"WindowPassResolution: int = {WindowPassResolution}, call setWindowPassResolution(NewIndex: int) to change this value")
