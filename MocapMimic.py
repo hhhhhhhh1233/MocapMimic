@@ -500,7 +500,7 @@ def printSegmentedResults(Segments, SegmentedBoneData):
 			tempString += string
 		print("+-" + bufferString)
 		print("| " + tempString)
-		print("+-" + separatorString)
+		print("| " + separatorString)
 	print("+-" + bufferString)
 
 def compareSelectedSkeletonBonesAgainstReference() -> None:
