@@ -250,7 +250,7 @@ def addSegmentMarker() -> None:
 	gSegments.append(current_frame)
 	# NOTE I'm not really sure this math below is right, it's kind of a fencepost problem
 	# I'm too lazy to properly solve it though so this will do
-	print(f"Segment added, current segments: {len(gSegments + 1)}")
+	print(f"Segment added, current segments: {len(gSegments) + 1}")
 
 def clearSegmentMarkers() -> None:
 	global gSegments
