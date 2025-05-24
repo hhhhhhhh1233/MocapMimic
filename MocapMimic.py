@@ -477,7 +477,6 @@ def printSegmentedResults(Segments, SegmentedBoneData):
 		tempString = f" Segment {i} ({Segments[i]['start'] * (1/freq):.2f}s - {Segments[i]['end'] * (1/freq):.2f}s) |"
 		sectionLengths.append(len(tempString) - 1)
 		titleString += tempString
-	print(titleString)
 	
 	bufferString = ""
 	separatorString = ""
@@ -488,6 +487,9 @@ def printSegmentedResults(Segments, SegmentedBoneData):
 		else:
 			bufferString += "-"
 			separatorString += " "
+	
+	print("+-" + bufferString)
+	print("| " + titleString)
 
 	for key, val in SegmentedBoneData.items():
 		tempString = f"{key:{longestBoneName}}|"
@@ -496,9 +498,10 @@ def printSegmentedResults(Segments, SegmentedBoneData):
 			rpadding = math.ceil((sectionLengths[i] - 5) / 2)
 			string = f"{'':{lpadding}}{el:0.3f}{'':{rpadding}}|"
 			tempString += string
-		print(bufferString)
-		print(tempString)
-		print(separatorString)
+		print("+-" + bufferString)
+		print("| " + tempString)
+		print("+-" + separatorString)
+	print("+-" + bufferString)
 
 def compareSelectedSkeletonBonesAgainstReference() -> None:
 	global bDoCoarsePass
